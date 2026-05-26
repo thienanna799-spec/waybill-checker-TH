@@ -57,8 +57,8 @@ async function main(options = {}) {
   let token = null;
   
   try {
-    // B1: Đọc danh sách waybill cần check từ Google Sheet trước
-    const scannedWaybills = await readWaybillsFromSheet();
+    // B1: Đọc danh sách waybill cần check từ Google Sheet trước (lọc theo ngày được chọn)
+    const scannedWaybills = await readWaybillsFromSheet(filterDate);
     const allWaybills = Object.keys(scannedWaybills);
     
     if (allWaybills.length === 0) {
@@ -79,11 +79,7 @@ async function main(options = {}) {
       log(`   Quét lô mã [${i + 1} - ${Math.min(i + chunkSize, allWaybills.length)}] (${chunk.length} mã)...`);
       const orders = await getOrdersByKeywords(token, chunk, 100);
       
-      let filtered = orders;
-      if (filterDate) {
-        filtered = orders.filter(o => o.inserted_at && o.inserted_at.startsWith(filterDate));
-      }
-      allOrders = allOrders.concat(filtered);
+      allOrders = allOrders.concat(orders);
     }
     
     log(`📦 Tổng số đơn hàng tìm thấy từ API sau khi lọc: ${allOrders.length}`);

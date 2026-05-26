@@ -1,6 +1,34 @@
+const moment = require('moment-timezone');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
 const { CONFIG, log } = require('./config');
+
+/**
+ * Hàm so khớp ngày trong Google Sheet với filterDate dạng YYYY-MM-DD
+ */
+function matchSheetDate(cellValue, filterDateYMD) {
+  if (!cellValue) return false;
+  const valStr = String(cellValue).trim();
+  
+  // filterDateYMD: "YYYY-MM-DD" -> target: "DD/MM/YYYY" hoặc "DD/MM"
+  const targetDDMMYYYY = moment(filterDateYMD, 'YYYY-MM-DD').format('DD/MM/YYYY');
+  const targetDDMM = moment(filterDateYMD, 'YYYY-MM-DD').format('DD/MM');
+  
+  if (valStr.includes(targetDDMMYYYY) || valStr.startsWith(targetDDMM)) {
+    return true;
+  }
+  
+  const num = parseFloat(valStr);
+  if (!isNaN(num) && num > 40000 && num < 60000) {
+    const dateObj = new Date((num - 25569) * 86400 * 1000);
+    const dateMoment = moment(dateObj);
+    if (dateMoment.format('YYYY-MM-DD') === filterDateYMD) {
+      return true;
+    }
+  }
+  
+  return false;
+}
 
 /**
  * Khởi tạo tài liệu Google Spreadsheet với xác thực JWT (v4)
@@ -18,9 +46,9 @@ function getSpreadsheetDoc() {
 }
 
 /**
- * Đọc waybill từ Google Sheet (Hỗ trợ trùng lặp)
+ * Đọc waybill từ Google Sheet (Hỗ trợ trùng lặp và lọc theo ngày)
  */
-async function readWaybillsFromSheet() {
+async function readWaybillsFromSheet(filterDate = null) {
   log('📖 Đang đọc waybill từ Google Sheet...');
   
   try {
@@ -37,6 +65,14 @@ async function readWaybillsFromSheet() {
     let totalCount = 0;
     
     rows.forEach((row, index) => {
+      // Lọc theo ngày nếu có yêu cầu
+      if (filterDate) {
+        const dateVal = row._rawData[0];
+        if (!matchSheetDate(dateVal, filterDate)) {
+          return; // Bỏ qua dòng không đúng ngày được chọn
+        }
+      }
+      
       const waybill = row._rawData[CONFIG.WAYBILL_COLUMN - 1];
       if (waybill && waybill.trim()) {
         const wb = waybill.trim();
