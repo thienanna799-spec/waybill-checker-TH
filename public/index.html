@@ -199,8 +199,27 @@
           </div>
 
           <div>
-            <label style="font-size: 0.775rem; color: var(--text-muted); display: block; margin-bottom: 4px;">3. Giờ gửi Báo cáo Telegram cuối ngày (Ví dụ: 19:00)</label>
-            <input type="text" id="cfg-report-time" class="search-input" style="width: 100%; margin-bottom: 0;" placeholder="Ví dụ: 19:00, 20:00 (Để trống nếu Tắt)">
+            <label style="font-size: 0.775rem; color: var(--text-muted); display: block; margin-bottom: 4px;">3. Chu kỳ báo cáo Telegram (Có còi báo)</label>
+            <div style="display: flex; gap: 8px;">
+              <div style="flex: 1;">
+                <select id="cfg-sync-hours" class="search-input" style="width: 100%; margin-bottom: 0;">
+                  <!-- Filled via JS -->
+                </select>
+                <span style="font-size: 0.7rem; color: var(--text-muted); text-align: center; display: block; margin-top: 2px;">Giờ</span>
+              </div>
+              <div style="flex: 1;">
+                <select id="cfg-sync-minutes" class="search-input" style="width: 100%; margin-bottom: 0;">
+                  <!-- Filled via JS -->
+                </select>
+                <span style="font-size: 0.7rem; color: var(--text-muted); text-align: center; display: block; margin-top: 2px;">Phút</span>
+              </div>
+              <div style="flex: 1;">
+                <select id="cfg-sync-seconds" class="search-input" style="width: 100%; margin-bottom: 0;">
+                  <!-- Filled via JS -->
+                </select>
+                <span style="font-size: 0.7rem; color: var(--text-muted); text-align: center; display: block; margin-top: 2px;">Giây</span>
+              </div>
+            </div>
           </div>
         </div>
         

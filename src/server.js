@@ -150,31 +150,35 @@ const runStatusLoop = async () => {
   }
 };
 
-const checkAndRunReport = async () => {
-  if (isRunning || isReportRunning) return;
-  if (!isWithinWorkingHours()) return;
+let reportTimeoutId = null;
 
-  const active = loadActiveConfig();
-  const reportTimeStr = active.reportTime || '';
-  if (!reportTimeStr.trim()) return;
-
-  const nowVN = moment().tz('Asia/Ho_Chi_Minh');
-  const currentMinuteStr = nowVN.format('HH:mm');
-  const targetTimes = reportTimeStr.split(',').map(t => t.trim());
-  
-  if (targetTimes.includes(currentMinuteStr)) {
-    if (lastReportMinuteStr === currentMinuteStr) return;
-    lastReportMinuteStr = currentMinuteStr;
-    isReportRunning = true;
-    try {
-      console.log(`[Scheduler] Kích hoạt gửi Báo cáo Telegram cuối ngày vào lúc ${currentMinuteStr}...`);
-      await main({ pagesToFetch: 15, silent: false });
-    } catch (err) {
-      console.error('[Report Sync Error]:', err.message);
-    } finally {
-      isReportRunning = false;
-    }
+const runReportLoop = async () => {
+  if (isRunning) return;
+  isRunning = true;
+  try {
+    await main({ pagesToFetch: 15, silent: false });
+  } catch (err) {
+    console.error('[Report Scheduler Error]:', err.message);
+  } finally {
+    isRunning = false;
   }
+};
+
+const scheduleNextReportRun = (totalSeconds) => {
+  if (reportTimeoutId) {
+    clearTimeout(reportTimeoutId);
+  }
+
+  const msToWait = totalSeconds * 1000;
+  const nextRun = moment().tz('Asia/Ho_Chi_Minh').add(totalSeconds, 'seconds');
+  console.log(`[Scheduler] Sẽ chạy Báo cáo Telegram tự động sau: ${(totalSeconds / 60).toFixed(2)} phút (vào lúc ${nextRun.format('HH:mm:ss')}) với chu kỳ ${totalSeconds} giây`);
+  
+  reportTimeoutId = setTimeout(async () => {
+    await runReportLoop();
+    const active = loadActiveConfig();
+    const secs = (active.syncIntervalHours || 0) * 3600 + (active.syncIntervalMinutes !== undefined ? active.syncIntervalMinutes : 20) * 60 + (active.syncIntervalSeconds || 0);
+    scheduleNextReportRun(secs >= 5 ? secs : 1200);
+  }, msToWait);
 };
 
 const startDvvcScheduler = () => {
@@ -208,18 +212,16 @@ const startStatusScheduler = () => {
 };
 
 const startReportScheduler = () => {
-  if (reportIntervalId) {
-    clearInterval(reportIntervalId);
-    reportIntervalId = null;
+  if (reportTimeoutId) {
+    clearTimeout(reportTimeoutId);
+    reportTimeoutId = null;
   }
   const active = loadActiveConfig();
-  const reportTimeStr = active.reportTime || '';
-  if (reportTimeStr.trim()) {
-    console.log(`[Scheduler] Bắt đầu kiểm tra Báo cáo Telegram vào lúc: ${reportTimeStr}`);
-    reportIntervalId = setInterval(checkAndRunReport, 30000);
-  } else {
-    console.log('[Scheduler] Gửi Báo cáo Telegram tự động đã tắt.');
-  }
+  const secs = (active.syncIntervalHours || 0) * 3600 + (active.syncIntervalMinutes !== undefined ? active.syncIntervalMinutes : 20) * 60 + (active.syncIntervalSeconds || 0);
+  const validSecs = secs >= 5 ? secs : 1200; // default 20 minutes if invalid
+  
+  console.log(`[Scheduler] Đã lên lịch gửi Báo cáo Telegram chu kỳ ${validSecs} giây.`);
+  scheduleNextReportRun(validSecs);
 };
 
 const restartAllSchedulers = () => {
@@ -242,6 +244,15 @@ app.get('/api/config', (req, res) => {
 app.post('/api/config', (req, res) => {
   const newConfig = req.body;
   const config = loadActiveConfig();
+
+  if (newConfig.syncIntervalHours !== undefined) config.syncIntervalHours = parseInt(newConfig.syncIntervalHours);
+  if (newConfig.syncIntervalMinutes !== undefined) config.syncIntervalMinutes = parseInt(newConfig.syncIntervalMinutes);
+  if (newConfig.syncIntervalSeconds !== undefined) config.syncIntervalSeconds = parseInt(newConfig.syncIntervalSeconds);
+  
+  const h = config.syncIntervalHours || 0;
+  const m = config.syncIntervalMinutes !== undefined ? config.syncIntervalMinutes : 20;
+  const s = config.syncIntervalSeconds || 0;
+  config.syncInterval = Math.round(((h * 3600) + (m * 60) + s) / 60) || 20;
   
   if (newConfig.dvvcIntervalSeconds !== undefined) {
     const val = parseInt(newConfig.dvvcIntervalSeconds);
@@ -257,10 +268,6 @@ app.post('/api/config', (req, res) => {
       return res.status(400).json({ success: false, message: 'Chu kỳ quét Trạng thái tối thiểu là 5 giây (hoặc bằng 0 để Tắt).' });
     }
     config.statusIntervalSeconds = val;
-  }
-  
-  if (newConfig.reportTime !== undefined) {
-    config.reportTime = newConfig.reportTime.trim();
   }
   
   config.bypassHours = newConfig.bypassHours !== undefined ? !!newConfig.bypassHours : config.bypassHours;

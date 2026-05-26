@@ -50,10 +50,39 @@ async function fetchConfig() {
     const res = await fetch('/api/config');
     const data = await res.json();
     
+    // Đổ dữ liệu vào select chu kỳ báo cáo Telegram
+    const hoursSelect = document.getElementById('cfg-sync-hours');
+    let hoursOpts = '';
+    for (let h = 0; h <= 24; h++) {
+      hoursOpts += `<option value="${h}">${h} giờ</option>`;
+    }
+    hoursSelect.innerHTML = hoursOpts;
+
+    const minutesSelect = document.getElementById('cfg-sync-minutes');
+    let minutesOpts = '';
+    for (let m = 0; m < 60; m++) {
+      minutesOpts += `<option value="${m}">${m} phút</option>`;
+    }
+    minutesSelect.innerHTML = minutesOpts;
+
+    const secondsSelect = document.getElementById('cfg-sync-seconds');
+    let secondsOpts = '';
+    for (let s = 0; s < 60; s++) {
+      secondsOpts += `<option value="${s}">${s} giây</option>`;
+    }
+    secondsSelect.innerHTML = secondsOpts;
+
+    let hVal = data.syncIntervalHours || 0;
+    let mVal = data.syncIntervalMinutes !== undefined ? data.syncIntervalMinutes : 20;
+    let sVal = data.syncIntervalSeconds || 0;
+
+    hoursSelect.value = hVal;
+    minutesSelect.value = mVal;
+    secondsSelect.value = sVal;
+    
     // Gán giá trị cho các trường chu kỳ mới
     document.getElementById('cfg-dvvc-interval').value = data.dvvcIntervalSeconds !== undefined ? data.dvvcIntervalSeconds : 60;
     document.getElementById('cfg-status-interval').value = data.statusIntervalSeconds !== undefined ? data.statusIntervalSeconds : 300;
-    document.getElementById('cfg-report-time').value = data.reportTime || '19:00';
 
     // Hiển thị chu kỳ hiện tại ở header
     const formatSec = (sec) => {
@@ -61,9 +90,11 @@ async function fetchConfig() {
       if (sec < 60) return `${sec}s`;
       return `${Math.round(sec / 60)}p`;
     };
+    const pad = (num) => String(num).padStart(2, '0');
+    const reportTxt = `${pad(hVal)}:${pad(mVal)}:${pad(sVal)}`;
     const dvvcTxt = formatSec(data.dvvcIntervalSeconds !== undefined ? data.dvvcIntervalSeconds : 60);
     const statusTxt = formatSec(data.statusIntervalSeconds !== undefined ? data.statusIntervalSeconds : 300);
-    document.getElementById('display-sync-interval').innerText = `ĐVVC: ${dvvcTxt} | Status: ${statusTxt}`;
+    document.getElementById('display-sync-interval').innerText = `BC: ${reportTxt} | ĐVVC: ${dvvcTxt} | Status: ${statusTxt}`;
 
     // Đổ dữ liệu vào select Giờ bắt đầu/kết thúc
     const fromSelect = document.getElementById('cfg-run-from');
@@ -122,15 +153,20 @@ function toggleHoursFields() {
 }
 
 async function saveConfig(isSilent = false) {
+  const hVal = parseInt(document.getElementById('cfg-sync-hours').value) || 0;
+  const mVal = parseInt(document.getElementById('cfg-sync-minutes').value) || 0;
+  const sVal = parseInt(document.getElementById('cfg-sync-seconds').value) || 0;
+
   const dvvcInterval = parseInt(document.getElementById('cfg-dvvc-interval').value) || 0;
   const statusInterval = parseInt(document.getElementById('cfg-status-interval').value) || 0;
-  const reportTime = document.getElementById('cfg-report-time').value.trim();
   const shipperVal = document.getElementById('cfg-col-shipper').value.trim();
 
   const payload = {
+    syncIntervalHours: hVal,
+    syncIntervalMinutes: mVal,
+    syncIntervalSeconds: sVal,
     dvvcIntervalSeconds: dvvcInterval,
     statusIntervalSeconds: statusInterval,
-    reportTime: reportTime,
     bypassHours: document.getElementById('cfg-bypass-hours').checked,
     runFromHour: parseInt(document.getElementById('cfg-run-from').value),
     runToHour: parseInt(document.getElementById('cfg-run-to').value),
@@ -167,9 +203,11 @@ async function saveConfig(isSilent = false) {
         if (sec < 60) return `${sec}s`;
         return `${Math.round(sec / 60)}p`;
       };
+      const pad = (num) => String(num).padStart(2, '0');
+      const reportTxt = `${pad(hVal)}:${pad(mVal)}:${pad(sVal)}`;
       const dvvcTxt = formatSec(dvvcInterval);
       const statusTxt = formatSec(statusInterval);
-      document.getElementById('display-sync-interval').innerText = `ĐVVC: ${dvvcTxt} | Status: ${statusTxt}`;
+      document.getElementById('display-sync-interval').innerText = `BC: ${reportTxt} | ĐVVC: ${dvvcTxt} | Status: ${statusTxt}`;
     } else {
       if (!isSilent) {
         alert('Lỗi khi lưu cấu hình: ' + result.message);
