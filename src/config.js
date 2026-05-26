@@ -117,6 +117,7 @@ function updateConfigFromJSON() {
   CONFIG.SHEET_NAME = active.sheetName;
   CONFIG.WAYBILL_COLUMN = active.waybillCol;
   CONFIG.RESULT_COLUMN = active.resultCol;
+  CONFIG.SHIPPER_COLUMN = active.shipperCol || null;
   CONFIG.START_ROW = active.headerRow + 1;
   CONFIG.WAYBILL_COLUMN_INDEX = active.waybillCol - 1;
   CONFIG.STATUS_COLUMN_INDEX = active.resultCol - 1;

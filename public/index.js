@@ -120,6 +120,7 @@ async function fetchConfig() {
     document.getElementById('cfg-sheet-id').value = data.googleSheetId || '';
     document.getElementById('cfg-sheet-name').value = data.sheetName || '';
     document.getElementById('cfg-col-waybill').value = data.waybillCol !== undefined ? data.waybillCol : 2;
+    document.getElementById('cfg-col-shipper').value = data.shipperCol !== undefined && data.shipperCol !== null ? data.shipperCol : '';
     document.getElementById('cfg-col-result').value = data.resultCol !== undefined ? data.resultCol : 3;
     document.getElementById('cfg-row-header').value = data.headerRow !== undefined ? data.headerRow : 1;
     
@@ -155,6 +156,8 @@ async function saveConfig() {
     document.getElementById('cfg-sync-seconds').value = 0;
   }
 
+  const shipperVal = document.getElementById('cfg-col-shipper').value.trim();
+
   const payload = {
     syncIntervalHours: h,
     syncIntervalMinutes: m,
@@ -173,6 +176,7 @@ async function saveConfig() {
     googleSheetId: document.getElementById('cfg-sheet-id').value,
     sheetName: document.getElementById('cfg-sheet-name').value,
     waybillCol: parseInt(document.getElementById('cfg-col-waybill').value),
+    shipperCol: shipperVal !== '' ? parseInt(shipperVal) : null,
     resultCol: parseInt(document.getElementById('cfg-col-result').value),
     headerRow: parseInt(document.getElementById('cfg-row-header').value)
   };

@@ -95,21 +95,26 @@ async function writeResultsToSheet(results) {
       endColumnIndex: maxColIndex
     });
     
-    // Tự động tìm cột SHIPPING UNIT theo tên cột tiêu đề
-    let shipperColIndex = colIndex + 1; // Mặc định là cột bên phải cột Status
-    for (let c = 0; c < maxColIndex; c++) {
-      const cell = sheet.getCell(headerRowIndex, c);
-      if (cell && cell.value) {
-        const valStr = String(cell.value).toUpperCase().trim();
-        if (
-          valStr === 'SHIPPING UNIT' || 
-          valStr === 'SHIPPING' || 
-          valStr === 'SHIPPER' || 
-          valStr === 'ĐƠN VỊ VẬN CHUYỂN' || 
-          valStr === 'ĐVVC'
-        ) {
-          shipperColIndex = c;
-          break;
+    // Xác định cột SHIPPING UNIT
+    let shipperColIndex = CONFIG.SHIPPER_COLUMN ? (CONFIG.SHIPPER_COLUMN - 1) : null;
+    
+    // Nếu không cấu hình rõ ràng, tự động tìm cột theo tên cột tiêu đề
+    if (shipperColIndex === null) {
+      shipperColIndex = colIndex + 1; // Fallback mặc định là cột bên phải cột Status
+      for (let c = 0; c < maxColIndex; c++) {
+        const cell = sheet.getCell(headerRowIndex, c);
+        if (cell && cell.value) {
+          const valStr = String(cell.value).toUpperCase().trim();
+          if (
+            valStr === 'SHIPPING UNIT' || 
+            valStr === 'SHIPPING' || 
+            valStr === 'SHIPPER' || 
+            valStr === 'ĐƠN VỊ VẬN CHUYỂN' || 
+            valStr === 'ĐVVC'
+          ) {
+            shipperColIndex = c;
+            break;
+          }
         }
       }
     }

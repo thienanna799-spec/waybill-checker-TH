@@ -171,6 +171,7 @@ app.post('/api/config', (req, res) => {
     if (newConfig.googleSheetId !== undefined) config.googleSheetId = newConfig.googleSheetId.trim();
     if (newConfig.sheetName !== undefined) config.sheetName = newConfig.sheetName;
     if (newConfig.waybillCol !== undefined) config.waybillCol = parseInt(newConfig.waybillCol);
+    if (newConfig.shipperCol !== undefined) config.shipperCol = newConfig.shipperCol !== null && newConfig.shipperCol !== '' ? parseInt(newConfig.shipperCol) : null;
     if (newConfig.resultCol !== undefined) config.resultCol = parseInt(newConfig.resultCol);
     if (newConfig.headerRow !== undefined) config.headerRow = parseInt(newConfig.headerRow);
     
