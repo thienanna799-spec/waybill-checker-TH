@@ -135,6 +135,7 @@ function updateConfigFromJSON() {
   
   CONFIG.RUN_FROM_HOUR = active.runFromHour;
   CONFIG.RUN_TO_HOUR = active.runToHour;
+  CONFIG.BYPASS_HOURS = active.bypassHours;
 }
 
 // Khởi chạy đồng bộ ngay khi load module
@@ -163,7 +164,7 @@ function saveLatestStatus(data) {
 }
 
 function isWithinWorkingHours() {
-  if (process.env.BYPASS_HOURS === 'true') {
+  if (CONFIG.BYPASS_HOURS === true || process.env.BYPASS_HOURS === 'true') {
     return true;
   }
   const currentHour = parseInt(moment().tz('Asia/Ho_Chi_Minh').format('HH'));

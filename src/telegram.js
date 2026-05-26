@@ -11,8 +11,8 @@ async function sendTelegram(message, unshipped = []) {
     return;
   }
   
-  const token = process.env.TELEGRAM_BOT_TOKEN || CONFIG.TELEGRAM_BOT_TOKEN;
-  let chatId = process.env.TELEGRAM_CHAT_ID || CONFIG.TELEGRAM_CHAT_ID;
+  const token = CONFIG.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
+  let chatId = CONFIG.TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHAT_ID;
 
   if (!token || !chatId) {
     log('Telegram Token hoặc Chat ID bị thiếu', 'WARNING');
