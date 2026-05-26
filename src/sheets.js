@@ -83,12 +83,11 @@ async function readWaybillsFromSheet(filterDate = null) {
         // ĐVVC hiện tại trong sheet (nếu có cấu hình)
         const currentShipper = CONFIG.SHIPPER_COLUMN ? (row._rawData[CONFIG.SHIPPER_COLUMN - 1] || '').trim() : '';
         
-        // Trạng thái cuối cùng
+        // Trạng thái cuối cùng (đã giao, đã huỷ, đã hoàn) thì không cần quét lại nữa
         const isFinalStatus = currentStatus === 'Delivered' || currentStatus === 'Canceled' || currentStatus === 'Returned';
         
-        // Tối ưu hóa: Nếu ĐVVC đã được điền hoặc trạng thái là final, bỏ qua không quét lại nữa
-        if (currentShipper || isFinalStatus) {
-          return; // Đã có ĐVVC hoặc trạng thái cuối cùng, không cần quét
+        if (isFinalStatus) {
+          return; // Bỏ qua dòng đã hoàn thành cuối cùng
         }
         
         if (!waybills[wb]) {
