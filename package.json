@@ -9,11 +9,17 @@
     "debug": "node src/debug.js",
     "test": "node src/test.js"
   },
-  "keywords": ["waybill", "g-solution", "telegram", "automation"],
+  "keywords": [
+    "waybill",
+    "g-solution",
+    "telegram",
+    "automation"
+  ],
   "author": "Your Name",
   "license": "MIT",
   "dependencies": {
     "axios": "^1.6.2",
+    "dotenv": "^17.4.2",
     "google-spreadsheet": "^4.1.1",
     "moment-timezone": "^0.5.43",
     "winston": "^3.11.0"

@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const axios = require('axios');
 const moment = require('moment-timezone');
@@ -76,8 +77,8 @@ async function loginGS() {
       }
     );
     
-    if (response.data && response.data.data && response.data.data.access_token) {
-      const token = response.data.data.access_token;
+    const token = response.data && (response.data.access_token || (response.data.data && response.data.data.access_token));
+    if (token) {
       log('✅ Đăng nhập thành công');
       return token;
     } else {
@@ -152,6 +153,26 @@ async function debugFindWaybill(order) {
     }
   }
   
+  // Tìm trong service_partner
+  if (order.service_partner && typeof order.service_partner === 'object') {
+    for (const field of waybillFields) {
+      if (order.service_partner[field] && typeof order.service_partner[field] === 'string' && order.service_partner[field].trim()) {
+        foundFields.push({ level: 'service_partner', field, value: order.service_partner[field] });
+        log(`✅ TÌM THẤY: service_partner.${field} = "${order.service_partner[field]}"`);
+      }
+    }
+  }
+
+  // Tìm trong partner
+  if (order.partner && typeof order.partner === 'object') {
+    for (const field of waybillFields) {
+      if (order.partner[field] && typeof order.partner[field] === 'string' && order.partner[field].trim()) {
+        foundFields.push({ level: 'partner', field, value: order.partner[field] });
+        log(`✅ TÌM THẤY: partner.${field} = "${order.partner[field]}"`);
+      }
+    }
+  }
+  
   // Nếu không tìm thấy, liệt kê tất cả field có trong order
   if (foundFields.length === 0) {
     log('⚠️ KHÔNG tìm thấy waybill trong các field thông thường!');
@@ -183,23 +204,47 @@ async function debugFindWaybill(order) {
  */
 function extractWaybill(order) {
   // Ưu tiên các field phổ biến
-  const priorityFields = ['tracking_number', 'waybill', 'awb', 'tracking_code', 'display_id'];
+  const priorityFields = ['tracking_number', 'waybill', 'awb', 'tracking_code'];
   
   for (const field of priorityFields) {
+    // 1. Check root level
     if (order[field] && typeof order[field] === 'string' && order[field].trim()) {
       const value = order[field].trim();
-      if (value.length >= 5) { // Waybill thường có độ dài > 5
+      if (value.length >= 5) {
         log(`📦 Lấy waybill từ order.${field}: ${value}`);
         return value;
       }
     }
     
+    // 2. Check shipping_info
     if (order.shipping_info && order.shipping_info[field] && 
         typeof order.shipping_info[field] === 'string' && 
         order.shipping_info[field].trim()) {
       const value = order.shipping_info[field].trim();
       if (value.length >= 5) {
         log(`📦 Lấy waybill từ shipping_info.${field}: ${value}`);
+        return value;
+      }
+    }
+
+    // 3. Check service_partner (được cấu hình bởi G-Solution)
+    if (order.service_partner && order.service_partner[field] && 
+        typeof order.service_partner[field] === 'string' && 
+        order.service_partner[field].trim()) {
+      const value = order.service_partner[field].trim();
+      if (value.length >= 5) {
+        log(`📦 Lấy waybill từ service_partner.${field}: ${value}`);
+        return value;
+      }
+    }
+
+    // 4. Check partner
+    if (order.partner && order.partner[field] && 
+        typeof order.partner[field] === 'string' && 
+        order.partner[field].trim()) {
+      const value = order.partner[field].trim();
+      if (value.length >= 5) {
+        log(`📦 Lấy waybill từ partner.${field}: ${value}`);
         return value;
       }
     }
