@@ -255,12 +255,34 @@ async function syncDvvcOnly() {
     // Lập bản đồ thông tin nhận được từ API
     const waybillStatusMap = new Map();
     for (const order of allOrders) {
-      const code = order.waybill_code;
-      if (code) {
-        waybillStatusMap.set(code.trim(), {
-          status: order.status || '',
-          shipper: order.shipper_name || ''
-        });
+      const rawStatus = order.status || 'unknown';
+      const statusStr = rawStatus.toLowerCase();
+      
+      let shipper = '';
+      if (order.partner) {
+        if (order.partner.name) {
+          shipper = order.partner.name.toUpperCase();
+        } else if (order.partner.partner && order.partner.partner.name) {
+          shipper = order.partner.partner.name.toUpperCase();
+        }
+      }
+      
+      const statusInfo = {
+        status: statusStr,
+        shipper: shipper
+      };
+      
+      if (order.display_id) {
+        waybillStatusMap.set(order.display_id.trim(), statusInfo);
+      }
+      if (order.platform_order_id) {
+        waybillStatusMap.set(order.platform_order_id.trim(), statusInfo);
+      }
+      if (order.partner && order.partner.tracking_number) {
+        waybillStatusMap.set(order.partner.tracking_number.trim(), statusInfo);
+      }
+      if (order.shipping_info && order.shipping_info.tracking_number) {
+        waybillStatusMap.set(order.shipping_info.tracking_number.trim(), statusInfo);
       }
     }
     

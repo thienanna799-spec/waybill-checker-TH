@@ -34,7 +34,7 @@ function populateDates() {
   }
   
   selectDate.innerHTML = `<option value="">Cả 3 ngày gần đây</option>` + 
-    dates.map(d => `<option value="${d.value}">${d.text}</option>`).join('');
+    dates.map((d, idx) => `<option value="${d.value}" ${idx === 0 ? 'selected' : ''}>${d.text}</option>`).join('');
 }
 
 function validateSyncInputs() {
