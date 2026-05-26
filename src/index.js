@@ -362,10 +362,18 @@ async function sendTelegram(message) {
   }
   
   try {
-    const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+    const token = process.env.TELEGRAM_BOT_TOKEN || CONFIG.TELEGRAM_BOT_TOKEN;
+    let chatId = process.env.TELEGRAM_CHAT_ID || CONFIG.TELEGRAM_CHAT_ID;
+    
+    // Tự động chuẩn hóa Chat ID của Telegram (thêm -100 cho Supergroup nếu thiếu)
+    if (chatId && chatId.startsWith('-') && !chatId.startsWith('-100')) {
+      chatId = '-100' + chatId.substring(1);
+    }
+    
+    const url = `https://api.telegram.org/bot${token}/sendMessage`;
     
     await axios.post(url, {
-      chat_id: process.env.TELEGRAM_CHAT_ID,
+      chat_id: chatId,
       text: message,
       parse_mode: 'HTML'
     });
