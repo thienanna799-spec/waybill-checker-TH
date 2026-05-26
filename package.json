@@ -11,7 +11,11 @@
     "service:start": "npx pm2 start src/server.js --name \"waybill-checker\"",
     "service:stop": "npx pm2 delete \"waybill-checker\"",
     "service:logs": "npx pm2 logs \"waybill-checker\"",
-    "service:status": "npx pm2 status \"waybill-checker\""
+    "service:status": "npx pm2 status \"waybill-checker\"",
+    "git-pusher:start": "npx pm2 start git-pusher.js --name \"git-pusher\"",
+    "git-pusher:stop": "npx pm2 delete \"git-pusher\"",
+    "git-pusher:logs": "npx pm2 logs \"git-pusher\"",
+    "git-pusher:status": "npx pm2 status \"git-pusher\""
   },
   "keywords": [
     "waybill",

@@ -28,7 +28,7 @@ let CONFIG = {
   WAYBILL_COLUMN_INDEX: parseInt(process.env.WAYBILL_COL || 2) - 1,
   STATUS_COLUMN_INDEX: parseInt(process.env.RESULT_COL || 3) - 1,
   START_ROW: parseInt(process.env.HEADER_ROW || 1) + 1,
-  
+
   WAYBILL_COLUMN: parseInt(process.env.WAYBILL_COL || 2),
   RESULT_COLUMN: parseInt(process.env.RESULT_COL || 3),
 
@@ -42,14 +42,14 @@ let CONFIG = {
 
   BATCH_NUMBER: parseInt(process.env.BATCH_NUMBER) || 1,
   TOTAL_BATCHES: parseInt(process.env.TOTAL_BATCHES) || 1,
-  
+
   TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
   TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID || '-5245305331',
   TELEGRAM_TAGS: process.env.TELEGRAM_TAGS || '@kycgipvn @namnggg1805 @Dduong712 @Linda_Huong',
   ENABLE_TELEGRAM: true,
   SEND_TELEGRAM_TEXT_LIST: true,
   SEND_TELEGRAM_TXT_FILE: true,
-  
+
   RUN_FROM_HOUR: 18,
   RUN_TO_HOUR: 24
 };
@@ -71,34 +71,34 @@ function loadActiveConfig() {
     waybillCol: parseInt(fileConfig.waybillCol || process.env.WAYBILL_COL || 2),
     resultCol: parseInt(fileConfig.resultCol || process.env.RESULT_COL || 3),
     headerRow: parseInt(fileConfig.headerRow !== undefined ? fileConfig.headerRow : (process.env.HEADER_ROW || 1)),
-    
+
     gsBaseUrl: fileConfig.gsBaseUrl || process.env.GS_BASE_URL || 'https://g-solution.vn',
     gsLoginPath: '/api/users/login/password',
     gsGetOrdersPath: '/api/orders/get_orders',
     gsEmail: fileConfig.gsEmail || process.env.GS_EMAIL,
     gsPassword: fileConfig.gsPassword || process.env.GS_PASSWORD,
     gsCountryCode: parseInt(fileConfig.gsCountryCode || process.env.GS_COUNTRY_CODE || 66),
-    
+
     telegramBotToken: fileConfig.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN,
     telegramChatId: fileConfig.telegramChatId || process.env.TELEGRAM_CHAT_ID || '-5245305331',
     telegramTags: fileConfig.telegramTags !== undefined ? fileConfig.telegramTags : (process.env.TELEGRAM_TAGS || '@kycgipvn @namnggg1805 @Dduong712 @Linda_Huong'),
     enableTelegram: fileConfig.enableTelegram !== undefined ? !!fileConfig.enableTelegram : true,
     sendTelegramTextList: fileConfig.sendTelegramTextList !== undefined ? !!fileConfig.sendTelegramTextList : true,
     sendTelegramTxtFile: fileConfig.sendTelegramTxtFile !== undefined ? !!fileConfig.sendTelegramTxtFile : true,
-    
+
     bypassHours: fileConfig.bypassHours !== undefined ? fileConfig.bypassHours : (process.env.BYPASS_HOURS === 'true'),
     runFromHour: parseInt(fileConfig.runFromHour !== undefined ? fileConfig.runFromHour : 18),
     runToHour: parseInt(fileConfig.runToHour !== undefined ? fileConfig.runToHour : 24),
-    
+
     syncIntervalHours: fileConfig.syncIntervalHours !== undefined ? parseInt(fileConfig.syncIntervalHours) : 0,
     syncIntervalMinutes: fileConfig.syncIntervalMinutes !== undefined ? parseInt(fileConfig.syncIntervalMinutes) : (fileConfig.syncInterval !== undefined ? parseInt(fileConfig.syncInterval) : 5),
     syncIntervalSeconds: fileConfig.syncIntervalSeconds !== undefined ? parseInt(fileConfig.syncIntervalSeconds) : 0,
     syncInterval: parseInt(fileConfig.syncInterval || 5),
-    
+
     dvvcIntervalSeconds: fileConfig.dvvcIntervalSeconds !== undefined ? parseInt(fileConfig.dvvcIntervalSeconds) : 60,
     statusIntervalSeconds: fileConfig.statusIntervalSeconds !== undefined ? parseInt(fileConfig.statusIntervalSeconds) : 300,
     reportTime: fileConfig.reportTime !== undefined ? fileConfig.reportTime : '19:00',
-    
+
     shipperCol: fileConfig.shipperCol !== undefined && fileConfig.shipperCol !== null ? parseInt(fileConfig.shipperCol) : null,
     telegramTitle: fileConfig.telegramTitle !== undefined ? fileConfig.telegramTitle : '📊 <b>ĐỐI CHIẾU HỆ THỐNG G-SOLUTION</b>'
   };
@@ -128,12 +128,12 @@ function updateConfigFromJSON() {
   CONFIG.START_ROW = active.headerRow + 1;
   CONFIG.WAYBILL_COLUMN_INDEX = active.waybillCol - 1;
   CONFIG.STATUS_COLUMN_INDEX = active.resultCol - 1;
-  
+
   CONFIG.GS_BASE_URL = active.gsBaseUrl;
   CONFIG.GS_EMAIL = active.gsEmail;
   CONFIG.GS_PASSWORD = active.gsPassword;
   CONFIG.GS_COUNTRY_CODE = active.gsCountryCode;
-  
+
   CONFIG.TELEGRAM_BOT_TOKEN = active.telegramBotToken;
   CONFIG.TELEGRAM_CHAT_ID = active.telegramChatId;
   CONFIG.TELEGRAM_TAGS = active.telegramTags;
@@ -141,7 +141,7 @@ function updateConfigFromJSON() {
   CONFIG.ENABLE_TELEGRAM = active.enableTelegram;
   CONFIG.SEND_TELEGRAM_TEXT_LIST = active.sendTelegramTextList;
   CONFIG.SEND_TELEGRAM_TXT_FILE = active.sendTelegramTxtFile;
-  
+
   CONFIG.RUN_FROM_HOUR = active.runFromHour;
   CONFIG.RUN_TO_HOUR = active.runToHour;
   CONFIG.BYPASS_HOURS = active.bypassHours;
@@ -183,7 +183,15 @@ function isWithinWorkingHours() {
     return true;
   }
   const currentHour = parseInt(moment().tz('Asia/Ho_Chi_Minh').format('HH'));
-  return currentHour >= CONFIG.RUN_FROM_HOUR && currentHour < CONFIG.RUN_TO_HOUR;
+  const start = CONFIG.RUN_FROM_HOUR !== undefined ? CONFIG.RUN_FROM_HOUR : 18;
+  const end = CONFIG.RUN_TO_HOUR !== undefined ? CONFIG.RUN_TO_HOUR : 24;
+
+  if (start < end) {
+    return currentHour >= start && currentHour < end;
+  } else {
+    // Khung giờ xuyên đêm (ví dụ từ 20:00 đến 04:00 hôm sau)
+    return currentHour >= start || currentHour < end;
+  }
 }
 
 module.exports = {
