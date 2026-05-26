@@ -187,8 +187,13 @@ async function main(options = {}) {
       shipped: allWaybills.length - unshipped.length,
       unshipped: unshipped.length
     };
-    const message = createTelegramMessage(stats, unshipped, statusCounts, shipperCounts);
-    await sendTelegram(message, unshipped);
+    
+    if (!options.silent) {
+      const message = createTelegramMessage(stats, unshipped, statusCounts, shipperCounts);
+      await sendTelegram(message, unshipped);
+    } else {
+      log('🔇 Chạy chế độ im lặng (Silent) - Không gửi báo cáo Telegram.');
+    }
     
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
     log(`✅ HOÀN THÀNH trong ${elapsed} giây`);
@@ -214,7 +219,9 @@ async function main(options = {}) {
       totalBatches: CONFIG.TOTAL_BATCHES
     });
     
-    await sendTelegram(`🔥 <b>LỖI SCRIPT</b>\nBatch ${CONFIG.BATCH_NUMBER}\n${error.message}`);
+    if (!options.silent) {
+      await sendTelegram(`🔥 <b>LỖI SCRIPT</b>\nBatch ${CONFIG.BATCH_NUMBER}\n${error.message}`);
+    }
   }
 }
 

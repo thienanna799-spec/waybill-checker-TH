@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const moment = require('moment-timezone');
 const { main, syncDvvcOnly, loadActiveConfig, updateConfigFromJSON } = require('./index');
+const { isWithinWorkingHours } = require('./config');
 const axios = require('axios');
 
 // Nạp biến môi trường
@@ -83,7 +84,7 @@ app.post('/api/trigger', async (req, res) => {
   console.log(`[Dashboard] Kích hoạt đối chiếu thủ công: Pages=${pagesToFetch}, Date=${filterDate || 'All'}...`);
 
   try {
-    await main({ pagesToFetch, filterDate });
+    await main({ pagesToFetch, filterDate, silent: false });
     res.json({ success: true, message: 'Đã hoàn thành đối chiếu thành công.' });
   } catch (err) {
     console.error('[Dashboard] Lỗi chạy đối chiếu thủ công:', err.message);
@@ -111,13 +112,122 @@ function writeConfig(config) {
   }
 }
 
-// Đọc cấu hình hiện tại lúc startup và chuyển đổi sang giây
-const activeCfg = loadActiveConfig();
-let currentIntervalSeconds = (activeCfg.syncIntervalHours || 0) * 3600 + (activeCfg.syncIntervalMinutes !== undefined ? activeCfg.syncIntervalMinutes : 5) * 60 + (activeCfg.syncIntervalSeconds || 0);
-if (currentIntervalSeconds < 5) {
-  currentIntervalSeconds = 300; // default 5 minutes
-}
-let nextRunTimeoutId = null;
+// Quản lý các bộ hẹn giờ tự động
+let dvvcIntervalId = null;
+let statusIntervalId = null;
+let reportIntervalId = null;
+
+let isDvvcRunning = false;
+let isStatusRunning = false;
+let isReportRunning = false;
+let lastReportMinuteStr = '';
+
+const runDvvcLoop = async () => {
+  if (isRunning || isDvvcRunning) return;
+  if (!isWithinWorkingHours()) return;
+  isDvvcRunning = true;
+  try {
+    console.log('[Scheduler] Bắt đầu quét ĐVVC nhanh...');
+    await syncDvvcOnly();
+  } catch (err) {
+    console.error('[Dvvc Sync Error]:', err.message);
+  } finally {
+    isDvvcRunning = false;
+  }
+};
+
+const runStatusLoop = async () => {
+  if (isRunning || isStatusRunning) return;
+  if (!isWithinWorkingHours()) return;
+  isStatusRunning = true;
+  try {
+    console.log('[Scheduler] Bắt đầu quét Trạng thái tự động (Chế độ im lặng)...');
+    await main({ pagesToFetch: 15, silent: true });
+  } catch (err) {
+    console.error('[Status Sync Error]:', err.message);
+  } finally {
+    isStatusRunning = false;
+  }
+};
+
+const checkAndRunReport = async () => {
+  if (isRunning || isReportRunning) return;
+  if (!isWithinWorkingHours()) return;
+
+  const active = loadActiveConfig();
+  const reportTimeStr = active.reportTime || '';
+  if (!reportTimeStr.trim()) return;
+
+  const nowVN = moment().tz('Asia/Ho_Chi_Minh');
+  const currentMinuteStr = nowVN.format('HH:mm');
+  const targetTimes = reportTimeStr.split(',').map(t => t.trim());
+  
+  if (targetTimes.includes(currentMinuteStr)) {
+    if (lastReportMinuteStr === currentMinuteStr) return;
+    lastReportMinuteStr = currentMinuteStr;
+    isReportRunning = true;
+    try {
+      console.log(`[Scheduler] Kích hoạt gửi Báo cáo Telegram cuối ngày vào lúc ${currentMinuteStr}...`);
+      await main({ pagesToFetch: 15, silent: false });
+    } catch (err) {
+      console.error('[Report Sync Error]:', err.message);
+    } finally {
+      isReportRunning = false;
+    }
+  }
+};
+
+const startDvvcScheduler = () => {
+  if (dvvcIntervalId) {
+    clearInterval(dvvcIntervalId);
+    dvvcIntervalId = null;
+  }
+  const active = loadActiveConfig();
+  const secs = active.dvvcIntervalSeconds !== undefined ? active.dvvcIntervalSeconds : 60;
+  if (secs > 0) {
+    console.log(`[Scheduler] Bắt đầu quét ĐVVC tự động mỗi ${secs} giây.`);
+    dvvcIntervalId = setInterval(runDvvcLoop, secs * 1000);
+  } else {
+    console.log('[Scheduler] Quét ĐVVC tự động đã tắt.');
+  }
+};
+
+const startStatusScheduler = () => {
+  if (statusIntervalId) {
+    clearInterval(statusIntervalId);
+    statusIntervalId = null;
+  }
+  const active = loadActiveConfig();
+  const secs = active.statusIntervalSeconds !== undefined ? active.statusIntervalSeconds : 300;
+  if (secs > 0) {
+    console.log(`[Scheduler] Bắt đầu quét Trạng thái tự động mỗi ${secs} giây.`);
+    statusIntervalId = setInterval(runStatusLoop, secs * 1000);
+  } else {
+    console.log('[Scheduler] Quét Trạng thái tự động đã tắt.');
+  }
+};
+
+const startReportScheduler = () => {
+  if (reportIntervalId) {
+    clearInterval(reportIntervalId);
+    reportIntervalId = null;
+  }
+  const active = loadActiveConfig();
+  const reportTimeStr = active.reportTime || '';
+  if (reportTimeStr.trim()) {
+    console.log(`[Scheduler] Bắt đầu kiểm tra Báo cáo Telegram vào lúc: ${reportTimeStr}`);
+    reportIntervalId = setInterval(checkAndRunReport, 30000);
+  } else {
+    console.log('[Scheduler] Gửi Báo cáo Telegram tự động đã tắt.');
+  }
+};
+
+const restartAllSchedulers = () => {
+  console.log('[Scheduler] Đang cập nhật và khởi động lại toàn bộ lịch hẹn...');
+  startDvvcScheduler();
+  startStatusScheduler();
+  startReportScheduler();
+};
 
 /**
  * Endpoint lấy cấu hình hiện tại
@@ -131,65 +241,54 @@ app.get('/api/config', (req, res) => {
  */
 app.post('/api/config', (req, res) => {
   const newConfig = req.body;
+  const config = loadActiveConfig();
   
-  const h = parseInt(newConfig.syncIntervalHours !== undefined ? newConfig.syncIntervalHours : 0);
-  const m = parseInt(newConfig.syncIntervalMinutes !== undefined ? newConfig.syncIntervalMinutes : 5);
-  const s = parseInt(newConfig.syncIntervalSeconds !== undefined ? newConfig.syncIntervalSeconds : 0);
-  
-  let hoursVal = h;
-  let minutesVal = m;
-  let secondsVal = s;
-  
-  if (hoursVal >= 24) {
-    hoursVal = 24;
-    minutesVal = 0;
-    secondsVal = 0;
-  }
-  
-  const totalSeconds = (hoursVal * 3600) + (minutesVal * 60) + secondsVal;
-  
-  if (totalSeconds >= 5) {
-    const config = loadActiveConfig();
-    
-    // Cập nhật các trường cấu hình
-    config.syncIntervalHours = hoursVal;
-    config.syncIntervalMinutes = minutesVal;
-    config.syncIntervalSeconds = secondsVal;
-    config.syncInterval = Math.round(totalSeconds / 60) || 1; // Hỗ trợ backward compatibility
-    
-    config.bypassHours = newConfig.bypassHours !== undefined ? !!newConfig.bypassHours : config.bypassHours;
-    config.runFromHour = newConfig.runFromHour !== undefined ? parseInt(newConfig.runFromHour) : config.runFromHour;
-    config.runToHour = newConfig.runToHour !== undefined ? parseInt(newConfig.runToHour) : config.runToHour;
-    
-    config.enableTelegram = newConfig.enableTelegram !== undefined ? !!newConfig.enableTelegram : config.enableTelegram;
-    config.sendTelegramTextList = newConfig.sendTelegramTextList !== undefined ? !!newConfig.sendTelegramTextList : config.sendTelegramTextList;
-    config.sendTelegramTxtFile = newConfig.sendTelegramTxtFile !== undefined ? !!newConfig.sendTelegramTxtFile : config.sendTelegramTxtFile;
-    if (newConfig.telegramBotToken !== undefined) config.telegramBotToken = newConfig.telegramBotToken.trim();
-    if (newConfig.telegramChatId !== undefined) config.telegramChatId = newConfig.telegramChatId.trim();
-    if (newConfig.telegramTags !== undefined) config.telegramTags = newConfig.telegramTags.trim();
-    if (newConfig.telegramTitle !== undefined) config.telegramTitle = newConfig.telegramTitle;
-    
-    if (newConfig.googleSheetId !== undefined) config.googleSheetId = newConfig.googleSheetId.trim();
-    if (newConfig.sheetName !== undefined) config.sheetName = newConfig.sheetName;
-    if (newConfig.waybillCol !== undefined) config.waybillCol = parseInt(newConfig.waybillCol);
-    if (newConfig.shipperCol !== undefined) config.shipperCol = newConfig.shipperCol !== null && newConfig.shipperCol !== '' ? parseInt(newConfig.shipperCol) : null;
-    if (newConfig.resultCol !== undefined) config.resultCol = parseInt(newConfig.resultCol);
-    if (newConfig.headerRow !== undefined) config.headerRow = parseInt(newConfig.headerRow);
-    
-    writeConfig(config);
-    
-    currentIntervalSeconds = totalSeconds;
-    console.log(`[Config] Đã cập nhật cấu hình mới vào config.json và đồng bộ sang index.js.`);
-    
-    // Nếu chế độ Service đang bật, lập tức tính toán lại lịch hẹn
-    if (process.env.RUN_AS_SERVICE === 'true') {
-      scheduleNextRun(currentIntervalSeconds);
+  if (newConfig.dvvcIntervalSeconds !== undefined) {
+    const val = parseInt(newConfig.dvvcIntervalSeconds);
+    if (val !== 0 && val < 5) {
+      return res.status(400).json({ success: false, message: 'Chu kỳ quét ĐVVC tối thiểu là 5 giây (hoặc bằng 0 để Tắt).' });
     }
-    
-    res.json({ success: true, config });
-  } else {
-    res.status(400).json({ success: false, message: 'Chu kỳ quét quá ngắn. Phải tối thiểu là 5 giây.' });
+    config.dvvcIntervalSeconds = val;
   }
+  
+  if (newConfig.statusIntervalSeconds !== undefined) {
+    const val = parseInt(newConfig.statusIntervalSeconds);
+    if (val !== 0 && val < 5) {
+      return res.status(400).json({ success: false, message: 'Chu kỳ quét Trạng thái tối thiểu là 5 giây (hoặc bằng 0 để Tắt).' });
+    }
+    config.statusIntervalSeconds = val;
+  }
+  
+  if (newConfig.reportTime !== undefined) {
+    config.reportTime = newConfig.reportTime.trim();
+  }
+  
+  config.bypassHours = newConfig.bypassHours !== undefined ? !!newConfig.bypassHours : config.bypassHours;
+  config.runFromHour = newConfig.runFromHour !== undefined ? parseInt(newConfig.runFromHour) : config.runFromHour;
+  config.runToHour = newConfig.runToHour !== undefined ? parseInt(newConfig.runToHour) : config.runToHour;
+  
+  config.enableTelegram = newConfig.enableTelegram !== undefined ? !!newConfig.enableTelegram : config.enableTelegram;
+  config.sendTelegramTextList = newConfig.sendTelegramTextList !== undefined ? !!newConfig.sendTelegramTextList : config.sendTelegramTextList;
+  config.sendTelegramTxtFile = newConfig.sendTelegramTxtFile !== undefined ? !!newConfig.sendTelegramTxtFile : config.sendTelegramTxtFile;
+  if (newConfig.telegramBotToken !== undefined) config.telegramBotToken = newConfig.telegramBotToken.trim();
+  if (newConfig.telegramChatId !== undefined) config.telegramChatId = newConfig.telegramChatId.trim();
+  if (newConfig.telegramTags !== undefined) config.telegramTags = newConfig.telegramTags.trim();
+  if (newConfig.telegramTitle !== undefined) config.telegramTitle = newConfig.telegramTitle;
+  
+  if (newConfig.googleSheetId !== undefined) config.googleSheetId = newConfig.googleSheetId.trim();
+  if (newConfig.sheetName !== undefined) config.sheetName = newConfig.sheetName;
+  if (newConfig.waybillCol !== undefined) config.waybillCol = parseInt(newConfig.waybillCol);
+  if (newConfig.shipperCol !== undefined) config.shipperCol = newConfig.shipperCol !== null && newConfig.shipperCol !== '' ? parseInt(newConfig.shipperCol) : null;
+  if (newConfig.resultCol !== undefined) config.resultCol = parseInt(newConfig.resultCol);
+  if (newConfig.headerRow !== undefined) config.headerRow = parseInt(newConfig.headerRow);
+  
+  writeConfig(config);
+  
+  if (process.env.RUN_AS_SERVICE === 'true') {
+    restartAllSchedulers();
+  }
+  
+  res.json({ success: true, config });
 });
 
 /**
@@ -217,61 +316,10 @@ app.post('/api/test-telegram', async (req, res) => {
   }
 });
 
-// Chạy vòng lặp tự động đồng bộ theo đúng các mốc thời gian (ví dụ chu kỳ 5p thì check lúc 0, 5, 10... phút của mỗi giờ)
-const runLoop = async () => {
-  if (isRunning) return;
-  isRunning = true;
-  try {
-    // Mặc định chạy dịch vụ ẩn sẽ quét 15 trang (~1500 đơn) để bao quát 3 ngày gần nhất
-    await main({ pagesToFetch: 15 });
-  } catch (err) {
-    console.error('[Dashboard Service Error]:', err.message);
-  } finally {
-    isRunning = false;
-  }
-};
-
-// Lên lịch chạy đồng bộ chính xác tại các mốc giây tiếp theo
-const scheduleNextRun = (totalSeconds) => {
-  if (nextRunTimeoutId) {
-    clearTimeout(nextRunTimeoutId);
-  }
-
-  const msToWait = totalSeconds * 1000;
-  const nextRun = moment().tz('Asia/Ho_Chi_Minh').add(totalSeconds, 'seconds');
-  console.log(`[Scheduler] Sẽ chạy tự động sau: ${(totalSeconds / 60).toFixed(2)} phút (vào lúc ${nextRun.format('HH:mm:ss')}) với chu kỳ ${totalSeconds} giây`);
-  
-  nextRunTimeoutId = setTimeout(async () => {
-    await runLoop();
-    scheduleNextRun(currentIntervalSeconds);
-  }, msToWait);
-};
-
-let isDvvcRunning = false;
-const runDvvcLoop = async () => {
-  if (isRunning || isDvvcRunning) return;
-  isDvvcRunning = true;
-  try {
-    await syncDvvcOnly();
-  } catch (err) {
-    console.error('[Dvvc Sync Error]:', err.message);
-  } finally {
-    isDvvcRunning = false;
-  }
-};
-
+// Khởi động các scheduler nếu chạy ở dạng dịch vụ nền
 if (process.env.RUN_AS_SERVICE === 'true') {
-  console.log('[Dashboard Server] Khởi động vòng lặp tự động đồng bộ...');
-  
-  // Khởi chạy ngay lần đầu sau 5 giây cho luồng chính
-  setTimeout(async () => {
-    await runLoop();
-    scheduleNextRun(currentIntervalSeconds);
-  }, 5000);
-
-  // Khởi chạy vòng lặp ĐVVC quét nhanh liên tục mỗi 60 giây (không gửi Telegram)
-  setTimeout(runDvvcLoop, 10000);
-  setInterval(runDvvcLoop, 60000);
+  console.log('[Dashboard Server] Khởi chạy các dịch vụ tự động đồng bộ...');
+  restartAllSchedulers();
 }
 
 // Start Server

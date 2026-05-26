@@ -94,6 +94,11 @@ function loadActiveConfig() {
     syncIntervalMinutes: fileConfig.syncIntervalMinutes !== undefined ? parseInt(fileConfig.syncIntervalMinutes) : (fileConfig.syncInterval !== undefined ? parseInt(fileConfig.syncInterval) : 5),
     syncIntervalSeconds: fileConfig.syncIntervalSeconds !== undefined ? parseInt(fileConfig.syncIntervalSeconds) : 0,
     syncInterval: parseInt(fileConfig.syncInterval || 5),
+    
+    dvvcIntervalSeconds: fileConfig.dvvcIntervalSeconds !== undefined ? parseInt(fileConfig.dvvcIntervalSeconds) : 60,
+    statusIntervalSeconds: fileConfig.statusIntervalSeconds !== undefined ? parseInt(fileConfig.statusIntervalSeconds) : 300,
+    reportTime: fileConfig.reportTime !== undefined ? fileConfig.reportTime : '19:00',
+    
     shipperCol: fileConfig.shipperCol !== undefined && fileConfig.shipperCol !== null ? parseInt(fileConfig.shipperCol) : null,
     telegramTitle: fileConfig.telegramTitle !== undefined ? fileConfig.telegramTitle : '📊 <b>ĐỐI CHIẾU HỆ THỐNG G-SOLUTION</b>'
   };
@@ -140,6 +145,10 @@ function updateConfigFromJSON() {
   CONFIG.RUN_FROM_HOUR = active.runFromHour;
   CONFIG.RUN_TO_HOUR = active.runToHour;
   CONFIG.BYPASS_HOURS = active.bypassHours;
+
+  CONFIG.DVVC_INTERVAL_SECONDS = active.dvvcIntervalSeconds;
+  CONFIG.STATUS_INTERVAL_SECONDS = active.statusIntervalSeconds;
+  CONFIG.REPORT_TIME = active.reportTime;
 }
 
 // Khởi chạy đồng bộ ngay khi load module

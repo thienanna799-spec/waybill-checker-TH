@@ -50,44 +50,20 @@ async function fetchConfig() {
     const res = await fetch('/api/config');
     const data = await res.json();
     
-    // Đổ dữ liệu vào select chu kỳ
-    const hoursSelect = document.getElementById('cfg-sync-hours');
-    let hoursOpts = '';
-    for (let h = 0; h <= 24; h++) {
-      hoursOpts += `<option value="${h}">${h} giờ</option>`;
-    }
-    hoursSelect.innerHTML = hoursOpts;
+    // Gán giá trị cho các trường chu kỳ mới
+    document.getElementById('cfg-dvvc-interval').value = data.dvvcIntervalSeconds !== undefined ? data.dvvcIntervalSeconds : 60;
+    document.getElementById('cfg-status-interval').value = data.statusIntervalSeconds !== undefined ? data.statusIntervalSeconds : 300;
+    document.getElementById('cfg-report-time').value = data.reportTime || '19:00';
 
-    const minutesSelect = document.getElementById('cfg-sync-minutes');
-    let minutesOpts = '';
-    for (let m = 0; m < 60; m++) {
-      minutesOpts += `<option value="${m}">${m} phút</option>`;
-    }
-    minutesSelect.innerHTML = minutesOpts;
-
-    const secondsSelect = document.getElementById('cfg-sync-seconds');
-    let secondsOpts = '';
-    for (let s = 0; s < 60; s++) {
-      secondsOpts += `<option value="${s}">${s} giây</option>`;
-    }
-    secondsSelect.innerHTML = secondsOpts;
-
-    let hours = data.syncIntervalHours || 0;
-    let minutes = data.syncIntervalMinutes !== undefined ? data.syncIntervalMinutes : 5;
-    let seconds = data.syncIntervalSeconds || 0;
-
-    // Backward compatibility fallback
-    if (hours === 0 && minutes === 0 && seconds === 0 && data.syncInterval) {
-      hours = Math.floor(data.syncInterval / 60);
-      minutes = data.syncInterval % 60;
-    }
-
-    hoursSelect.value = hours;
-    minutesSelect.value = minutes;
-    secondsSelect.value = seconds;
-
-    const pad = (num) => String(num).padStart(2, '0');
-    document.getElementById('display-sync-interval').innerText = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    // Hiển thị chu kỳ hiện tại ở header
+    const formatSec = (sec) => {
+      if (sec === 0 || sec === '0') return 'Tắt';
+      if (sec < 60) return `${sec}s`;
+      return `${Math.round(sec / 60)}p`;
+    };
+    const dvvcTxt = formatSec(data.dvvcIntervalSeconds !== undefined ? data.dvvcIntervalSeconds : 60);
+    const statusTxt = formatSec(data.statusIntervalSeconds !== undefined ? data.statusIntervalSeconds : 300);
+    document.getElementById('display-sync-interval').innerText = `ĐVVC: ${dvvcTxt} | Status: ${statusTxt}`;
 
     // Đổ dữ liệu vào select Giờ bắt đầu/kết thúc
     const fromSelect = document.getElementById('cfg-run-from');
@@ -146,23 +122,15 @@ function toggleHoursFields() {
 }
 
 async function saveConfig(isSilent = false) {
-  const h = parseInt(document.getElementById('cfg-sync-hours').value) || 0;
-  let m = parseInt(document.getElementById('cfg-sync-minutes').value) || 0;
-  let s = parseInt(document.getElementById('cfg-sync-seconds').value) || 0;
-
-  if (h >= 24) {
-    m = 0;
-    s = 0;
-    document.getElementById('cfg-sync-minutes').value = 0;
-    document.getElementById('cfg-sync-seconds').value = 0;
-  }
-
+  const dvvcInterval = parseInt(document.getElementById('cfg-dvvc-interval').value) || 0;
+  const statusInterval = parseInt(document.getElementById('cfg-status-interval').value) || 0;
+  const reportTime = document.getElementById('cfg-report-time').value.trim();
   const shipperVal = document.getElementById('cfg-col-shipper').value.trim();
 
   const payload = {
-    syncIntervalHours: h,
-    syncIntervalMinutes: m,
-    syncIntervalSeconds: s,
+    dvvcIntervalSeconds: dvvcInterval,
+    statusIntervalSeconds: statusInterval,
+    reportTime: reportTime,
     bypassHours: document.getElementById('cfg-bypass-hours').checked,
     runFromHour: parseInt(document.getElementById('cfg-run-from').value),
     runToHour: parseInt(document.getElementById('cfg-run-to').value),
@@ -194,8 +162,14 @@ async function saveConfig(isSilent = false) {
       if (!isSilent) {
         alert('Đã lưu cấu hình thành công!');
       }
-      const pad = (num) => String(num).padStart(2, '0');
-      document.getElementById('display-sync-interval').innerText = `${pad(h)}:${pad(m)}:${pad(s)}`;
+      const formatSec = (sec) => {
+        if (sec === 0 || sec === '0') return 'Tắt';
+        if (sec < 60) return `${sec}s`;
+        return `${Math.round(sec / 60)}p`;
+      };
+      const dvvcTxt = formatSec(dvvcInterval);
+      const statusTxt = formatSec(statusInterval);
+      document.getElementById('display-sync-interval').innerText = `ĐVVC: ${dvvcTxt} | Status: ${statusTxt}`;
     } else {
       if (!isSilent) {
         alert('Lỗi khi lưu cấu hình: ' + result.message);

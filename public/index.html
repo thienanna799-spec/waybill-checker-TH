@@ -172,27 +172,35 @@
           </div>
           
           <div>
-            <label style="font-size: 0.775rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Chu kỳ quét tự động (Tối đa 24h)</label>
-            <div style="display: flex; gap: 8px;">
-              <div style="flex: 1;">
-                <select id="cfg-sync-hours" class="search-input" style="width: 100%; margin-bottom: 0;" onchange="validateSyncInputs()">
-                  <!-- Filled via JS -->
-                </select>
-                <span style="font-size: 0.7rem; color: var(--text-muted); text-align: center; display: block; margin-top: 2px;">Giờ</span>
-              </div>
-              <div style="flex: 1;">
-                <select id="cfg-sync-minutes" class="search-input" style="width: 100%; margin-bottom: 0;" onchange="validateSyncInputs()">
-                  <!-- Filled via JS -->
-                </select>
-                <span style="font-size: 0.7rem; color: var(--text-muted); text-align: center; display: block; margin-top: 2px;">Phút</span>
-              </div>
-              <div style="flex: 1;">
-                <select id="cfg-sync-seconds" class="search-input" style="width: 100%; margin-bottom: 0;" onchange="validateSyncInputs()">
-                  <!-- Filled via JS -->
-                </select>
-                <span style="font-size: 0.7rem; color: var(--text-muted); text-align: center; display: block; margin-top: 2px;">Giây</span>
-              </div>
-            </div>
+            <label style="font-size: 0.775rem; color: var(--text-muted); display: block; margin-bottom: 4px;">1. Chu kỳ quét ĐVVC (Cột D)</label>
+            <select id="cfg-dvvc-interval" class="search-input" style="width: 100%; margin-bottom: 0;">
+              <option value="15">15 giây</option>
+              <option value="30">30 giây</option>
+              <option value="60">1 phút</option>
+              <option value="120">2 phút</option>
+              <option value="300">5 phút</option>
+              <option value="600">10 phút</option>
+              <option value="0">Tắt tự động</option>
+            </select>
+          </div>
+          
+          <div>
+            <label style="font-size: 0.775rem; color: var(--text-muted); display: block; margin-bottom: 4px;">2. Chu kỳ quét Trạng thái (Cột G)</label>
+            <select id="cfg-status-interval" class="search-input" style="width: 100%; margin-bottom: 0;">
+              <option value="60">1 phút</option>
+              <option value="180">3 phút</option>
+              <option value="300">5 phút</option>
+              <option value="600">10 phút</option>
+              <option value="900">15 phút</option>
+              <option value="1800">30 phút</option>
+              <option value="3600">1 giờ</option>
+              <option value="0">Tắt tự động</option>
+            </select>
+          </div>
+
+          <div>
+            <label style="font-size: 0.775rem; color: var(--text-muted); display: block; margin-bottom: 4px;">3. Giờ gửi Báo cáo Telegram cuối ngày (Ví dụ: 19:00)</label>
+            <input type="text" id="cfg-report-time" class="search-input" style="width: 100%; margin-bottom: 0;" placeholder="Ví dụ: 19:00, 20:00 (Để trống nếu Tắt)">
           </div>
         </div>
         
