@@ -76,12 +76,27 @@ async function readWaybillsFromSheet(filterDate = null) {
       const waybill = row._rawData[CONFIG.WAYBILL_COLUMN - 1];
       if (waybill && waybill.trim()) {
         const wb = waybill.trim();
+        
+        // Trạng thái hiện tại trong sheet
+        const currentStatus = (row._rawData[CONFIG.RESULT_COLUMN - 1] || '').trim();
+        
+        // ĐVVC hiện tại trong sheet (nếu có cấu hình)
+        const currentShipper = CONFIG.SHIPPER_COLUMN ? (row._rawData[CONFIG.SHIPPER_COLUMN - 1] || '').trim() : '';
+        
+        // Trạng thái cuối cùng
+        const isFinalStatus = currentStatus === 'Delivered' || currentStatus === 'Canceled' || currentStatus === 'Returned';
+        
+        // Tối ưu hóa: Nếu ĐVVC đã được điền hoặc trạng thái là final, bỏ qua không quét lại nữa
+        if (currentShipper || isFinalStatus) {
+          return; // Đã có ĐVVC hoặc trạng thái cuối cùng, không cần quét
+        }
+        
         if (!waybills[wb]) {
           waybills[wb] = [];
         }
         waybills[wb].push({
           row: row.rowNumber, // Sử dụng thuộc tính rowNumber gốc của google-spreadsheet
-          currentStatus: row._rawData[CONFIG.RESULT_COLUMN - 1] || ''
+          currentStatus: currentStatus
         });
         totalCount++;
       }
