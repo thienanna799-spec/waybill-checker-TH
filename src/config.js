@@ -164,7 +164,9 @@ function saveLatestStatus(data) {
 }
 
 function isWithinWorkingHours() {
-  if (CONFIG.BYPASS_HOURS === true || process.env.BYPASS_HOURS === 'true') {
+  if (CONFIG.BYPASS_HOURS !== undefined) {
+    if (CONFIG.BYPASS_HOURS === true) return true;
+  } else if (process.env.BYPASS_HOURS === 'true') {
     return true;
   }
   const currentHour = parseInt(moment().tz('Asia/Ho_Chi_Minh').format('HH'));
