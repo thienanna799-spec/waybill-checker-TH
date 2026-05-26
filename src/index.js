@@ -225,7 +225,11 @@ async function main(options = {}) {
 // Chạy chương trình
 if (require.main === module) {
   if (process.env.RUN_AS_SERVICE === 'true') {
-    log('🚀 Khởi động chế độ SERVICE (Tự động chạy mỗi 5 phút)...');
+    const active = loadActiveConfig();
+    const intervalSec = (active.syncIntervalHours || 0) * 3600 + (active.syncIntervalMinutes !== undefined ? active.syncIntervalMinutes : 5) * 60 + (active.syncIntervalSeconds || 0);
+    const ms = (intervalSec >= 5 ? intervalSec : 300) * 1000;
+    
+    log(`🚀 Khởi động chế độ SERVICE (Tự động chạy mỗi ${(ms / 60000).toFixed(2)} phút)...`);
     
     const runService = async () => {
       try {
@@ -233,11 +237,16 @@ if (require.main === module) {
       } catch (err) {
         log(`❌ Lỗi service: ${err.message}`, 'ERROR');
       }
-      log(`⏳ Đang chờ 5 phút cho lần chạy tiếp theo...`);
+      
+      const latestCfg = loadActiveConfig();
+      const nextSec = (latestCfg.syncIntervalHours || 0) * 3600 + (latestCfg.syncIntervalMinutes !== undefined ? latestCfg.syncIntervalMinutes : 5) * 60 + (latestCfg.syncIntervalSeconds || 0);
+      const nextMs = (nextSec >= 5 ? nextSec : 300) * 1000;
+      log(`⏳ Đang chờ ${(nextMs / 60000).toFixed(2)} phút cho lần chạy tiếp theo...`);
+      
+      setTimeout(runService, nextMs);
     };
     
     runService();
-    setInterval(runService, 5 * 60 * 1000);
   } else {
     main().catch(console.error);
   }

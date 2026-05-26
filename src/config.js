@@ -86,6 +86,9 @@ function loadActiveConfig() {
     runFromHour: parseInt(fileConfig.runFromHour !== undefined ? fileConfig.runFromHour : 18),
     runToHour: parseInt(fileConfig.runToHour !== undefined ? fileConfig.runToHour : 24),
     
+    syncIntervalHours: fileConfig.syncIntervalHours !== undefined ? parseInt(fileConfig.syncIntervalHours) : 0,
+    syncIntervalMinutes: fileConfig.syncIntervalMinutes !== undefined ? parseInt(fileConfig.syncIntervalMinutes) : (fileConfig.syncInterval !== undefined ? parseInt(fileConfig.syncInterval) : 5),
+    syncIntervalSeconds: fileConfig.syncIntervalSeconds !== undefined ? parseInt(fileConfig.syncIntervalSeconds) : 0,
     syncInterval: parseInt(fileConfig.syncInterval || 5)
   };
 

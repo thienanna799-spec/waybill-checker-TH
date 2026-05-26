@@ -111,8 +111,12 @@ function writeConfig(config) {
   }
 }
 
-// Đọc cấu hình hiện tại lúc startup
-let currentIntervalMinutes = loadActiveConfig().syncInterval || 5;
+// Đọc cấu hình hiện tại lúc startup và chuyển đổi sang giây
+const activeCfg = loadActiveConfig();
+let currentIntervalSeconds = (activeCfg.syncIntervalHours || 0) * 3600 + (activeCfg.syncIntervalMinutes !== undefined ? activeCfg.syncIntervalMinutes : 5) * 60 + (activeCfg.syncIntervalSeconds || 0);
+if (currentIntervalSeconds < 5) {
+  currentIntervalSeconds = 300; // default 5 minutes
+}
 let nextRunTimeoutId = null;
 
 /**
@@ -127,13 +131,32 @@ app.get('/api/config', (req, res) => {
  */
 app.post('/api/config', (req, res) => {
   const newConfig = req.body;
-  const intervalVal = parseInt(newConfig.syncInterval);
   
-  if (intervalVal && [5, 10, 15, 30, 60].includes(intervalVal)) {
+  const h = parseInt(newConfig.syncIntervalHours !== undefined ? newConfig.syncIntervalHours : 0);
+  const m = parseInt(newConfig.syncIntervalMinutes !== undefined ? newConfig.syncIntervalMinutes : 5);
+  const s = parseInt(newConfig.syncIntervalSeconds !== undefined ? newConfig.syncIntervalSeconds : 0);
+  
+  let hoursVal = h;
+  let minutesVal = m;
+  let secondsVal = s;
+  
+  if (hoursVal >= 24) {
+    hoursVal = 24;
+    minutesVal = 0;
+    secondsVal = 0;
+  }
+  
+  const totalSeconds = (hoursVal * 3600) + (minutesVal * 60) + secondsVal;
+  
+  if (totalSeconds >= 5) {
     const config = loadActiveConfig();
     
     // Cập nhật các trường cấu hình
-    config.syncInterval = intervalVal;
+    config.syncIntervalHours = hoursVal;
+    config.syncIntervalMinutes = minutesVal;
+    config.syncIntervalSeconds = secondsVal;
+    config.syncInterval = Math.round(totalSeconds / 60) || 1; // Hỗ trợ backward compatibility
+    
     config.bypassHours = newConfig.bypassHours !== undefined ? !!newConfig.bypassHours : config.bypassHours;
     config.runFromHour = newConfig.runFromHour !== undefined ? parseInt(newConfig.runFromHour) : config.runFromHour;
     config.runToHour = newConfig.runToHour !== undefined ? parseInt(newConfig.runToHour) : config.runToHour;
@@ -151,17 +174,17 @@ app.post('/api/config', (req, res) => {
     
     writeConfig(config);
     
-    currentIntervalMinutes = intervalVal;
+    currentIntervalSeconds = totalSeconds;
     console.log(`[Config] Đã cập nhật cấu hình mới vào config.json và đồng bộ sang index.js.`);
     
     // Nếu chế độ Service đang bật, lập tức tính toán lại lịch hẹn
     if (process.env.RUN_AS_SERVICE === 'true') {
-      scheduleNextRun(currentIntervalMinutes);
+      scheduleNextRun(currentIntervalSeconds);
     }
     
     res.json({ success: true, config });
   } else {
-    res.status(400).json({ success: false, message: 'Chu kỳ không hợp lệ. Chỉ chấp nhận: 5, 10, 15, 30, 60 phút.' });
+    res.status(400).json({ success: false, message: 'Chu kỳ quét quá ngắn. Phải tối thiểu là 5 giây.' });
   }
 });
 
@@ -204,32 +227,19 @@ const runLoop = async () => {
   }
 };
 
-// Lên lịch chạy đồng bộ chính xác tại các mốc chia hết cho chu kỳ phút
-const scheduleNextRun = (intervalMin) => {
+// Lên lịch chạy đồng bộ chính xác tại các mốc giây tiếp theo
+const scheduleNextRun = (totalSeconds) => {
   if (nextRunTimeoutId) {
     clearTimeout(nextRunTimeoutId);
   }
 
-  const now = moment().tz('Asia/Ho_Chi_Minh');
-  const minutes = now.minute();
-  
-  // Tính mốc tiếp theo chia hết cho chu kỳ
-  const nextMark = Math.ceil((minutes + 0.01) / intervalMin) * intervalMin;
-  
-  let nextRun = now.clone().minute(nextMark % 60).second(0).millisecond(0);
-  
-  // Nếu vượt quá 60 phút, tăng thêm số giờ tương ứng
-  const hoursToAdd = Math.floor(nextMark / 60);
-  if (hoursToAdd > 0) {
-    nextRun.add(hoursToAdd, 'hours');
-  }
-  
-  const msToWait = nextRun.diff(now);
-  console.log(`[Scheduler] Sẽ chạy tự động sau: ${(msToWait / 1000 / 60).toFixed(2)} phút (vào lúc ${nextRun.format('HH:mm:ss')}) với chu kỳ ${intervalMin} phút`);
+  const msToWait = totalSeconds * 1000;
+  const nextRun = moment().tz('Asia/Ho_Chi_Minh').add(totalSeconds, 'seconds');
+  console.log(`[Scheduler] Sẽ chạy tự động sau: ${(totalSeconds / 60).toFixed(2)} phút (vào lúc ${nextRun.format('HH:mm:ss')}) với chu kỳ ${totalSeconds} giây`);
   
   nextRunTimeoutId = setTimeout(async () => {
     await runLoop();
-    scheduleNextRun(currentIntervalMinutes);
+    scheduleNextRun(currentIntervalSeconds);
   }, msToWait);
 };
 
@@ -239,7 +249,7 @@ if (process.env.RUN_AS_SERVICE === 'true') {
   // Khởi chạy ngay lần đầu sau 5 giây
   setTimeout(async () => {
     await runLoop();
-    scheduleNextRun(currentIntervalMinutes);
+    scheduleNextRun(currentIntervalSeconds);
   }, 5000);
 }
 

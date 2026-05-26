@@ -483,13 +483,9 @@
         </div>
       </div>
       <div class="actions">
-        <select id="select-interval" class="search-input" style="width: 170px; margin-bottom: 0;" onchange="updateInterval()">
-          <option value="5">Chu kỳ: 5 phút</option>
-          <option value="10">Chu kỳ: 10 phút</option>
-          <option value="15">Chu kỳ: 15 phút</option>
-          <option value="30">Chu kỳ: 30 phút</option>
-          <option value="60">Chu kỳ: 60 phút</option>
-        </select>
+        <div class="search-input" style="display: flex; align-items: center; justify-content: center; width: auto; min-width: 160px; margin-bottom: 0; background: rgba(255,255,255,0.05); font-size: 0.85rem; font-weight: 500; height: 38px; border-color: var(--border-color);">
+          Chu kỳ: <span id="display-sync-interval" style="margin-left: 5px; font-weight: 700; color: var(--primary);">00:05:00</span>
+        </div>
         <select id="select-date" class="search-input" style="width: 170px; margin-bottom: 0;">
           <option value="">Cả 3 ngày gần đây</option>
           <!-- Dynamic options loaded by JS -->
@@ -636,14 +632,27 @@
           </div>
           
           <div>
-            <label style="font-size: 0.775rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Chu kỳ quét tự động</label>
-            <select id="cfg-sync-interval" class="search-input" style="width: 100%; margin-bottom: 0;">
-              <option value="5">Mỗi 5 phút</option>
-              <option value="10">Mỗi 10 phút</option>
-              <option value="15">Mỗi 15 phút</option>
-              <option value="30">Mỗi 30 phút</option>
-              <option value="60">Mỗi 60 phút</option>
-            </select>
+            <label style="font-size: 0.775rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Chu kỳ quét tự động (Tối đa 24h)</label>
+            <div style="display: flex; gap: 8px;">
+              <div style="flex: 1;">
+                <select id="cfg-sync-hours" class="search-input" style="width: 100%; margin-bottom: 0;" onchange="validateSyncInputs()">
+                  <!-- Filled via JS -->
+                </select>
+                <span style="font-size: 0.7rem; color: var(--text-muted); text-align: center; display: block; margin-top: 2px;">Giờ</span>
+              </div>
+              <div style="flex: 1;">
+                <select id="cfg-sync-minutes" class="search-input" style="width: 100%; margin-bottom: 0;" onchange="validateSyncInputs()">
+                  <!-- Filled via JS -->
+                </select>
+                <span style="font-size: 0.7rem; color: var(--text-muted); text-align: center; display: block; margin-top: 2px;">Phút</span>
+              </div>
+              <div style="flex: 1;">
+                <select id="cfg-sync-seconds" class="search-input" style="width: 100%; margin-bottom: 0;" onchange="validateSyncInputs()">
+                  <!-- Filled via JS -->
+                </select>
+                <span style="font-size: 0.7rem; color: var(--text-muted); text-align: center; display: block; margin-top: 2px;">Giây</span>
+              </div>
+            </div>
           </div>
         </div>
         
@@ -746,16 +755,57 @@
         dates.map(d => `<option value="${d.value}">${d.text}</option>`).join('');
     }
 
+    function validateSyncInputs() {
+      const h = parseInt(document.getElementById('cfg-sync-hours').value) || 0;
+      if (h >= 24) {
+        document.getElementById('cfg-sync-minutes').value = 0;
+        document.getElementById('cfg-sync-seconds').value = 0;
+      }
+    }
+
     async function fetchConfig() {
       try {
         const res = await fetch('/api/config');
         const data = await res.json();
         
-        // Cập nhật selector chu kỳ ở header
-        if (data.syncInterval) {
-          document.getElementById('select-interval').value = data.syncInterval;
-          document.getElementById('cfg-sync-interval').value = data.syncInterval;
+        // Đổ dữ liệu vào select chu kỳ
+        const hoursSelect = document.getElementById('cfg-sync-hours');
+        let hoursOpts = '';
+        for (let h = 0; h <= 24; h++) {
+          hoursOpts += `<option value="${h}">${h} giờ</option>`;
         }
+        hoursSelect.innerHTML = hoursOpts;
+
+        const minutesSelect = document.getElementById('cfg-sync-minutes');
+        let minutesOpts = '';
+        for (let m = 0; m < 60; m++) {
+          minutesOpts += `<option value="${m}">${m} phút</option>`;
+        }
+        minutesSelect.innerHTML = minutesOpts;
+
+        const secondsSelect = document.getElementById('cfg-sync-seconds');
+        let secondsOpts = '';
+        for (let s = 0; s < 60; s++) {
+          secondsOpts += `<option value="${s}">${s} giây</option>`;
+        }
+        secondsSelect.innerHTML = secondsOpts;
+
+        let hours = data.syncIntervalHours || 0;
+        let minutes = data.syncIntervalMinutes !== undefined ? data.syncIntervalMinutes : 5;
+        let seconds = data.syncIntervalSeconds || 0;
+
+        // Backward compatibility fallback
+        if (hours === 0 && minutes === 0 && seconds === 0 && data.syncInterval) {
+          hours = Math.floor(data.syncInterval / 60);
+          minutes = data.syncInterval % 60;
+        }
+
+        hoursSelect.value = hours;
+        minutesSelect.value = minutes;
+        secondsSelect.value = seconds;
+
+        const pad = (num) => String(num).padStart(2, '0');
+        document.getElementById('display-sync-interval').innerText = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 
         // Đổ dữ liệu vào select Giờ bắt đầu/kết thúc
         const fromSelect = document.getElementById('cfg-run-from');
@@ -810,8 +860,21 @@
     }
 
     async function saveConfig() {
+      const h = parseInt(document.getElementById('cfg-sync-hours').value) || 0;
+      let m = parseInt(document.getElementById('cfg-sync-minutes').value) || 0;
+      let s = parseInt(document.getElementById('cfg-sync-seconds').value) || 0;
+
+      if (h >= 24) {
+        m = 0;
+        s = 0;
+        document.getElementById('cfg-sync-minutes').value = 0;
+        document.getElementById('cfg-sync-seconds').value = 0;
+      }
+
       const payload = {
-        syncInterval: parseInt(document.getElementById('cfg-sync-interval').value),
+        syncIntervalHours: h,
+        syncIntervalMinutes: m,
+        syncIntervalSeconds: s,
         bypassHours: document.getElementById('cfg-bypass-hours').checked,
         runFromHour: parseInt(document.getElementById('cfg-run-from').value),
         runToHour: parseInt(document.getElementById('cfg-run-to').value),
@@ -837,20 +900,14 @@
         const result = await res.json();
         if (result.success) {
           alert('Đã lưu cấu hình thành công!');
-          // Cập nhật lại select ở header
-          document.getElementById('select-interval').value = payload.syncInterval;
+          const pad = (num) => String(num).padStart(2, '0');
+          document.getElementById('display-sync-interval').innerText = `${pad(h)}:${pad(m)}:${pad(s)}`;
         } else {
           alert('Lỗi khi lưu cấu hình: ' + result.message);
         }
       } catch (err) {
         alert('Lỗi kết nối: ' + err.message);
       }
-    }
-
-    async function updateInterval() {
-      const val = document.getElementById('select-interval').value;
-      document.getElementById('cfg-sync-interval').value = val;
-      await saveConfig();
     }
 
     async function fetchStatus() {
