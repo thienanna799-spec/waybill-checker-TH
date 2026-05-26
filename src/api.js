@@ -59,7 +59,7 @@ async function getOrdersByKeywords(token, keywords, pageSize = 100) {
     return [];
   } catch (error) {
     log(`❌ Lấy đơn hàng theo danh sách mã thất bại: ${error.message}`, 'ERROR');
-    return [];
+    throw error;
   }
 }
 
