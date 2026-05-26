@@ -192,7 +192,7 @@ async function main(options = {}) {
       unshipped: unshipped.length
     };
     const message = createTelegramMessage(stats, unshipped, statusCounts, shipperCounts);
-    await sendTelegram(message);
+    await sendTelegram(message, unshipped);
     
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
     log(`✅ HOÀN THÀNH trong ${elapsed} giây`);

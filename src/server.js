@@ -162,6 +162,8 @@ app.post('/api/config', (req, res) => {
     config.runToHour = newConfig.runToHour !== undefined ? parseInt(newConfig.runToHour) : config.runToHour;
     
     config.enableTelegram = newConfig.enableTelegram !== undefined ? !!newConfig.enableTelegram : config.enableTelegram;
+    config.sendTelegramTextList = newConfig.sendTelegramTextList !== undefined ? !!newConfig.sendTelegramTextList : config.sendTelegramTextList;
+    config.sendTelegramTxtFile = newConfig.sendTelegramTxtFile !== undefined ? !!newConfig.sendTelegramTxtFile : config.sendTelegramTxtFile;
     if (newConfig.telegramBotToken !== undefined) config.telegramBotToken = newConfig.telegramBotToken.trim();
     if (newConfig.telegramChatId !== undefined) config.telegramChatId = newConfig.telegramChatId.trim();
     if (newConfig.telegramTags !== undefined) config.telegramTags = newConfig.telegramTags.trim();

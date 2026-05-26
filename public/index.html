@@ -665,6 +665,17 @@
             <label for="cfg-enable-telegram" style="font-size: 0.85rem; font-weight: 500; cursor: pointer; user-select: none;">Bật gửi tin báo lỗi Telegram</label>
           </div>
           
+          <div style="display: flex; gap: 20px; padding-left: 28px; margin-top: -6px; margin-bottom: 4px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="cfg-telegram-send-text" style="width: 16px; height: 16px; cursor: pointer;">
+              <label for="cfg-telegram-send-text" style="font-size: 0.8rem; cursor: pointer; user-select: none;">Gửi list mã dạng Text</label>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="cfg-telegram-send-file" style="width: 16px; height: 16px; cursor: pointer;">
+              <label for="cfg-telegram-send-file" style="font-size: 0.8rem; cursor: pointer; user-select: none;">Gửi đính kèm File .txt</label>
+            </div>
+          </div>
+          
           <div>
             <label style="font-size: 0.775rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Token Bot Telegram</label>
             <input type="password" id="cfg-telegram-token" class="search-input" style="width: 100%; margin-bottom: 0;" placeholder="Nhập token bot...">
@@ -829,6 +840,8 @@
         document.getElementById('cfg-run-to').value = data.runToHour !== undefined ? data.runToHour : 24;
         
         document.getElementById('cfg-enable-telegram').checked = !!data.enableTelegram;
+        document.getElementById('cfg-telegram-send-text').checked = data.sendTelegramTextList !== undefined ? !!data.sendTelegramTextList : true;
+        document.getElementById('cfg-telegram-send-file').checked = data.sendTelegramTxtFile !== undefined ? !!data.sendTelegramTxtFile : true;
         document.getElementById('cfg-telegram-token').value = data.telegramBotToken || '';
         document.getElementById('cfg-telegram-chat').value = data.telegramChatId || '';
         document.getElementById('cfg-telegram-tags').value = data.telegramTags || '';
@@ -880,6 +893,8 @@
         runToHour: parseInt(document.getElementById('cfg-run-to').value),
         
         enableTelegram: document.getElementById('cfg-enable-telegram').checked,
+        sendTelegramTextList: document.getElementById('cfg-telegram-send-text').checked,
+        sendTelegramTxtFile: document.getElementById('cfg-telegram-send-file').checked,
         telegramBotToken: document.getElementById('cfg-telegram-token').value,
         telegramChatId: document.getElementById('cfg-telegram-chat').value,
         telegramTags: document.getElementById('cfg-telegram-tags').value,

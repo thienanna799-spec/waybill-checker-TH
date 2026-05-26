@@ -3,29 +3,69 @@ const moment = require('moment-timezone');
 const { CONFIG, STATUS_DISPLAY_MAP, log } = require('./config');
 
 /**
- * Gửi tin nhắn Telegram
+ * Gửi tin nhắn Telegram kèm file đính kèm nếu được bật
  */
-async function sendTelegram(message) {
+async function sendTelegram(message, unshipped = []) {
   if (!CONFIG.ENABLE_TELEGRAM) {
     log('Telegram đã tắt');
     return;
   }
   
-  try {
-    const token = process.env.TELEGRAM_BOT_TOKEN || CONFIG.TELEGRAM_BOT_TOKEN;
-    let chatId = process.env.TELEGRAM_CHAT_ID || CONFIG.TELEGRAM_CHAT_ID;
+  const token = process.env.TELEGRAM_BOT_TOKEN || CONFIG.TELEGRAM_BOT_TOKEN;
+  let chatId = process.env.TELEGRAM_CHAT_ID || CONFIG.TELEGRAM_CHAT_ID;
 
+  if (!token || !chatId) {
+    log('Telegram Token hoặc Chat ID bị thiếu', 'WARNING');
+    return;
+  }
+
+  // 1. Gửi tin nhắn văn bản báo cáo chính
+  try {
     const url = `https://api.telegram.org/bot${token}/sendMessage`;
-    
     await axios.post(url, {
       chat_id: chatId,
       text: message,
       parse_mode: 'HTML'
     });
-    
-    log('✅ Đã gửi Telegram');
+    log('✅ Đã gửi Telegram Message');
   } catch (error) {
-    log(`❌ Gửi Telegram thất bại: ${error.message}`, 'ERROR');
+    log(`❌ Gửi Telegram Message thất bại: ${error.message}`, 'ERROR');
+  }
+
+  // 2. Gửi file đính kèm .txt chứa danh sách mã vận đơn nếu bật cấu hình SEND_TELEGRAM_TXT_FILE
+  if (CONFIG.SEND_TELEGRAM_TXT_FILE && unshipped && unshipped.length > 0) {
+    // Nhóm các đơn chưa hoàn thành theo trạng thái
+    const groups = {};
+    for (const x of unshipped) {
+      const status = x.status || 'cần kiểm tra';
+      if (!groups[status]) {
+        groups[status] = [];
+      }
+      groups[status].push(x.waybill);
+    }
+
+    for (const [status, waybills] of Object.entries(groups)) {
+      const fileName = `${status.replace(/\s+/g, '_')}_${waybills.length}.txt`;
+      const fileContent = waybills.join('\n');
+      const caption = `File đính kèm: ${status} (${waybills.length} đơn)`;
+      
+      try {
+        const docUrl = `https://api.telegram.org/bot${token}/sendDocument`;
+        const formData = new FormData();
+        formData.append('chat_id', chatId);
+        formData.append('caption', caption);
+        formData.append('document', new Blob([fileContent], { type: 'text/plain' }), fileName);
+
+        await axios.post(docUrl, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        log(`✅ Đã gửi file đính kèm Telegram: ${fileName}`);
+      } catch (err) {
+        log(`❌ Gửi file đính kèm Telegram ${fileName} thất bại: ${err.message}`, 'ERROR');
+      }
+    }
   }
 }
 
@@ -60,22 +100,38 @@ function createTelegramMessage(stats, unshippedList, statusCounts = {}, shipperC
   }
   
   if (unshippedList.length > 0) {
-    // Nhóm các đơn theo trạng thái tiếng Anh thực tế
-    const groups = {};
-    for (const x of unshippedList) {
-      const status = x.status || 'cần kiểm tra';
-      if (!groups[status]) {
-        groups[status] = [];
+    if (CONFIG.SEND_TELEGRAM_TEXT_LIST) {
+      // Nhóm các đơn theo trạng thái tiếng Anh thực tế
+      const groups = {};
+      for (const x of unshippedList) {
+        const status = x.status || 'cần kiểm tra';
+        if (!groups[status]) {
+          groups[status] = [];
+        }
+        groups[status].push(x.waybill);
       }
-      groups[status].push(x.waybill);
-    }
-    
-    // Sắp xếp và in chi tiết từng nhóm trạng thái
-    for (const [status, waybills] of Object.entries(groups)) {
-      message += `<b>${status} (${waybills.length}):</b>\n`;
-      waybills.slice(0, 15).forEach(wb => message += `• <code>${wb}</code>\n`);
-      if (waybills.length > 15) {
-        message += `<i>... và ${waybills.length - 15} mã khác</i>\n`;
+      
+      // Sắp xếp và in chi tiết từng nhóm trạng thái
+      for (const [status, waybills] of Object.entries(groups)) {
+        message += `<b>${status} (${waybills.length}):</b>\n`;
+        waybills.slice(0, 15).forEach(wb => message += `• <code>${wb}</code>\n`);
+        if (waybills.length > 15) {
+          message += `<i>... và ${waybills.length - 15} mã khác</i>\n`;
+        }
+        message += `\n`;
+      }
+    } else {
+      // Chỉ in tổng số lượng của từng nhóm chưa gửi mà không in danh sách mã text
+      const groups = {};
+      for (const x of unshippedList) {
+        const status = x.status || 'cần kiểm tra';
+        if (!groups[status]) {
+          groups[status] = [];
+        }
+        groups[status].push(x.waybill);
+      }
+      for (const [status, waybills] of Object.entries(groups)) {
+        message += `<b>${status}:</b> <b>${waybills.length}</b> đơn\n`;
       }
       message += `\n`;
     }

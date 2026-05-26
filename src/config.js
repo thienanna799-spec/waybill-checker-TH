@@ -47,6 +47,8 @@ let CONFIG = {
   TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID || '-5245305331',
   TELEGRAM_TAGS: process.env.TELEGRAM_TAGS || '@kycgipvn @namnggg1805 @Dduong712 @Linda_Huong',
   ENABLE_TELEGRAM: true,
+  SEND_TELEGRAM_TEXT_LIST: true,
+  SEND_TELEGRAM_TXT_FILE: true,
   
   RUN_FROM_HOUR: 18,
   RUN_TO_HOUR: 24
@@ -80,7 +82,9 @@ function loadActiveConfig() {
     telegramBotToken: fileConfig.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN,
     telegramChatId: fileConfig.telegramChatId || process.env.TELEGRAM_CHAT_ID || '-5245305331',
     telegramTags: fileConfig.telegramTags !== undefined ? fileConfig.telegramTags : (process.env.TELEGRAM_TAGS || '@kycgipvn @namnggg1805 @Dduong712 @Linda_Huong'),
-    enableTelegram: fileConfig.enableTelegram !== undefined ? fileConfig.enableTelegram : true,
+    enableTelegram: fileConfig.enableTelegram !== undefined ? !!fileConfig.enableTelegram : true,
+    sendTelegramTextList: fileConfig.sendTelegramTextList !== undefined ? !!fileConfig.sendTelegramTextList : true,
+    sendTelegramTxtFile: fileConfig.sendTelegramTxtFile !== undefined ? !!fileConfig.sendTelegramTxtFile : true,
     
     bypassHours: fileConfig.bypassHours !== undefined ? fileConfig.bypassHours : (process.env.BYPASS_HOURS === 'true'),
     runFromHour: parseInt(fileConfig.runFromHour !== undefined ? fileConfig.runFromHour : 18),
@@ -126,6 +130,8 @@ function updateConfigFromJSON() {
   CONFIG.TELEGRAM_CHAT_ID = active.telegramChatId;
   CONFIG.TELEGRAM_TAGS = active.telegramTags;
   CONFIG.ENABLE_TELEGRAM = active.enableTelegram;
+  CONFIG.SEND_TELEGRAM_TEXT_LIST = active.sendTelegramTextList;
+  CONFIG.SEND_TELEGRAM_TXT_FILE = active.sendTelegramTxtFile;
   
   CONFIG.RUN_FROM_HOUR = active.runFromHour;
   CONFIG.RUN_TO_HOUR = active.runToHour;
