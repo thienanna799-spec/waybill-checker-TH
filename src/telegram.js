@@ -75,7 +75,7 @@ async function sendTelegram(message, unshipped = []) {
 function createTelegramMessage(stats, unshippedList, statusCounts = {}, shipperCounts = {}) {
   const now = moment().tz('Asia/Ho_Chi_Minh').format('DD/MM/YYYY HH:mm:ss');
   
-  let message = `📊 <b>ĐỐI CHIẾU HỆ THỐNG G-SOLUTION</b>\n`;
+  let message = `${CONFIG.TELEGRAM_TITLE}\n`;
   message += `<i>📅 ${now}</i>\n\n`;
   message += `━━━━━━━━━━━━━━━━━━━━━\n`;
   message += `📦 Tổng scan trong sheet: <b>${stats.total}</b> mã unique\n\n`;

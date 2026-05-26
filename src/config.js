@@ -130,6 +130,7 @@ function updateConfigFromJSON() {
   CONFIG.TELEGRAM_BOT_TOKEN = active.telegramBotToken;
   CONFIG.TELEGRAM_CHAT_ID = active.telegramChatId;
   CONFIG.TELEGRAM_TAGS = active.telegramTags;
+  CONFIG.TELEGRAM_TITLE = active.telegramTitle || '📊 <b>ĐỐI CHIẾU HỆ THỐNG G-SOLUTION</b>';
   CONFIG.ENABLE_TELEGRAM = active.enableTelegram;
   CONFIG.SEND_TELEGRAM_TEXT_LIST = active.sendTelegramTextList;
   CONFIG.SEND_TELEGRAM_TXT_FILE = active.sendTelegramTxtFile;

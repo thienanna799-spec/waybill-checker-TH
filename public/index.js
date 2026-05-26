@@ -113,6 +113,7 @@ async function fetchConfig() {
     document.getElementById('cfg-enable-telegram').checked = !!data.enableTelegram;
     document.getElementById('cfg-telegram-send-text').checked = data.sendTelegramTextList !== undefined ? !!data.sendTelegramTextList : true;
     document.getElementById('cfg-telegram-send-file').checked = data.sendTelegramTxtFile !== undefined ? !!data.sendTelegramTxtFile : true;
+    document.getElementById('cfg-telegram-title').value = data.telegramTitle || '';
     document.getElementById('cfg-telegram-token').value = data.telegramBotToken || '';
     document.getElementById('cfg-telegram-chat').value = data.telegramChatId || '';
     document.getElementById('cfg-telegram-tags').value = data.telegramTags || '';
@@ -172,6 +173,7 @@ async function saveConfig() {
     telegramBotToken: document.getElementById('cfg-telegram-token').value,
     telegramChatId: document.getElementById('cfg-telegram-chat').value,
     telegramTags: document.getElementById('cfg-telegram-tags').value,
+    telegramTitle: document.getElementById('cfg-telegram-title').value,
     
     googleSheetId: document.getElementById('cfg-sheet-id').value,
     sheetName: document.getElementById('cfg-sheet-name').value,

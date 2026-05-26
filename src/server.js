@@ -167,6 +167,7 @@ app.post('/api/config', (req, res) => {
     if (newConfig.telegramBotToken !== undefined) config.telegramBotToken = newConfig.telegramBotToken.trim();
     if (newConfig.telegramChatId !== undefined) config.telegramChatId = newConfig.telegramChatId.trim();
     if (newConfig.telegramTags !== undefined) config.telegramTags = newConfig.telegramTags.trim();
+    if (newConfig.telegramTitle !== undefined) config.telegramTitle = newConfig.telegramTitle;
     
     if (newConfig.googleSheetId !== undefined) config.googleSheetId = newConfig.googleSheetId.trim();
     if (newConfig.sheetName !== undefined) config.sheetName = newConfig.sheetName;
