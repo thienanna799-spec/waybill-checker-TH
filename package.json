@@ -1,0 +1,24 @@
+{
+  "name": "waybill-checker",
+  "version": "2.0.0",
+  "description": "Tự động đối chiếu waybill với G-Solution mỗi 5 phút",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js",
+    "debug": "node src/debug.js",
+    "test": "node src/test.js"
+  },
+  "keywords": ["waybill", "g-solution", "telegram", "automation"],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.2",
+    "google-spreadsheet": "^4.1.1",
+    "moment-timezone": "^0.5.43",
+    "winston": "^3.11.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,68 @@
+name: 🚚 Waybill Checker - Tự động mỗi 5 phút
+
+on:
+  # Tự động chạy mỗi 5 phút
+  schedule:
+    - cron: '*/5 * * * *'
+  
+  # Cho phép chạy thủ công từ GitHub
+  workflow_dispatch:
+  
+  # Tự động chạy khi có code mới
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+# Chạy song song 5 batch để xử lý nhanh
+jobs:
+  waybill-checker:
+    runs-on: ubuntu-latest
+    
+    # Chạy song song 5 luồng
+    strategy:
+      fail-fast: false
+      matrix:
+        batch: [1, 2, 3, 4, 5]
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: 📦 Install dependencies
+        run: npm install
+        
+      - name: 🚀 Run waybill check - Batch ${{ matrix.batch }}
+        env:
+          # Google Sheets
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
+          GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
+          
+          # G-Solution
+          GS_EMAIL: ${{ secrets.GS_EMAIL }}
+          GS_PASSWORD: ${{ secrets.GS_PASSWORD }}
+          GS_BASE_URL: ${{ secrets.GS_BASE_URL }}
+          GS_COUNTRY_CODE: ${{ secrets.GS_COUNTRY_CODE }}
+          
+          # Telegram
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          
+          # Batch config
+          BATCH_NUMBER: ${{ matrix.batch }}
+          TOTAL_BATCHES: 5
+          
+        run: node src/index.js
+      
+      - name: 💾 Save results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-batch-${{ matrix.batch }}
+          path: logs/
