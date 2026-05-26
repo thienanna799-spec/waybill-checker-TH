@@ -93,7 +93,9 @@ function loadActiveConfig() {
     syncIntervalHours: fileConfig.syncIntervalHours !== undefined ? parseInt(fileConfig.syncIntervalHours) : 0,
     syncIntervalMinutes: fileConfig.syncIntervalMinutes !== undefined ? parseInt(fileConfig.syncIntervalMinutes) : (fileConfig.syncInterval !== undefined ? parseInt(fileConfig.syncInterval) : 5),
     syncIntervalSeconds: fileConfig.syncIntervalSeconds !== undefined ? parseInt(fileConfig.syncIntervalSeconds) : 0,
-    syncInterval: parseInt(fileConfig.syncInterval || 5)
+    syncInterval: parseInt(fileConfig.syncInterval || 5),
+    shipperCol: fileConfig.shipperCol !== undefined && fileConfig.shipperCol !== null ? parseInt(fileConfig.shipperCol) : null,
+    telegramTitle: fileConfig.telegramTitle !== undefined ? fileConfig.telegramTitle : '📊 <b>ĐỐI CHIẾU HỆ THỐNG G-SOLUTION</b>'
   };
 
   if (!fs.existsSync(configPath)) {
