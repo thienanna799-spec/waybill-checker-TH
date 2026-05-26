@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const moment = require('moment-timezone');
-const { main, loadActiveConfig, updateConfigFromJSON } = require('./index');
+const { main, syncDvvcOnly, loadActiveConfig, updateConfigFromJSON } = require('./index');
 const axios = require('axios');
 
 // Nạp biến môi trường
@@ -247,14 +247,31 @@ const scheduleNextRun = (totalSeconds) => {
   }, msToWait);
 };
 
+let isDvvcRunning = false;
+const runDvvcLoop = async () => {
+  if (isRunning || isDvvcRunning) return;
+  isDvvcRunning = true;
+  try {
+    await syncDvvcOnly();
+  } catch (err) {
+    console.error('[Dvvc Sync Error]:', err.message);
+  } finally {
+    isDvvcRunning = false;
+  }
+};
+
 if (process.env.RUN_AS_SERVICE === 'true') {
   console.log('[Dashboard Server] Khởi động vòng lặp tự động đồng bộ...');
   
-  // Khởi chạy ngay lần đầu sau 5 giây
+  // Khởi chạy ngay lần đầu sau 5 giây cho luồng chính
   setTimeout(async () => {
     await runLoop();
     scheduleNextRun(currentIntervalSeconds);
   }, 5000);
+
+  // Khởi chạy vòng lặp ĐVVC quét nhanh liên tục mỗi 60 giây (không gửi Telegram)
+  setTimeout(runDvvcLoop, 10000);
+  setInterval(runDvvcLoop, 60000);
 }
 
 // Start Server

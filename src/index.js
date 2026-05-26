@@ -218,6 +218,75 @@ async function main(options = {}) {
   }
 }
 
+/**
+ * Đồng bộ nhanh thông tin ĐVVC cho các dòng chưa có dữ liệu ĐVVC (Chạy ngầm liên tục, không gửi Telegram)
+ */
+async function syncDvvcOnly() {
+  updateConfigFromJSON();
+
+  try {
+    // Chỉ đọc các mã vận đơn chưa có thông tin ĐVVC (dvvcOnly = true)
+    const scannedWaybills = await readWaybillsFromSheet(null, true);
+    const allWaybills = Object.keys(scannedWaybills);
+    
+    if (allWaybills.length === 0) {
+      return; // Không có mã nào trống ĐVVC
+    }
+    
+    log(`⚡ [ĐVVC Sync] Phát hiện ${allWaybills.length} mã vận đơn chưa có thông tin ĐVVC. Tiến hành cập nhật nhanh...`);
+    
+    const token = await loginGS();
+    let allOrders = [];
+    const chunkSize = 50;
+    
+    for (let i = 0; i < allWaybills.length; i += chunkSize) {
+      const chunk = allWaybills.slice(i, i + chunkSize);
+      const orders = await getOrdersByKeywords(token, chunk, 100);
+      allOrders = allOrders.concat(orders);
+    }
+    
+    // Lập bản đồ thông tin nhận được từ API
+    const waybillStatusMap = new Map();
+    for (const order of allOrders) {
+      const code = order.waybill_code;
+      if (code) {
+        waybillStatusMap.set(code.trim(), {
+          status: order.status || '',
+          shipper: order.shipper_name || ''
+        });
+      }
+    }
+    
+    const results = [];
+    for (const waybill of allWaybills) {
+      const info = waybillStatusMap.get(waybill);
+      if (!info) continue; // Bỏ qua nếu chưa tìm thấy thông tin trên hệ thống G-Solution
+      
+      const occs = scannedWaybills[waybill];
+      for (const occ of occs) {
+        const statusStr = info.status;
+        const displayStatus = STATUS_DISPLAY_MAP[statusStr] || (statusStr.charAt(0).toUpperCase() + statusStr.slice(1));
+        const shipper = info.shipper;
+        
+        results.push({
+          row: occ.row,
+          text: displayStatus,
+          shipper: shipper,
+          waybill: waybill
+        });
+      }
+    }
+    
+    if (results.length > 0) {
+      await writeResultsToSheet(results);
+      log(`⚡ [ĐVVC Sync] Đã cập nhật xong ĐVVC cho ${results.length} dòng thành công.`);
+    }
+    
+  } catch (error) {
+    log(`❌ Lỗi đồng bộ ĐVVC nhanh: ${error.message}`, 'ERROR');
+  }
+}
+
 // Chạy chương trình
 if (require.main === module) {
   if (process.env.RUN_AS_SERVICE === 'true') {
@@ -250,6 +319,7 @@ if (require.main === module) {
 
 module.exports = {
   main,
+  syncDvvcOnly,
   debugFindWaybill,
   extractWaybill,
   loadActiveConfig,
