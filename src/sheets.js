@@ -83,18 +83,44 @@ async function writeResultsToSheet(results) {
     const maxRow = Math.max(...results.map(r => r.row));
     const colIndex = CONFIG.RESULT_COLUMN - 1;
     
+    // Dòng header (dòng tiêu đề là CONFIG.START_ROW - 2)
+    const headerRowIndex = CONFIG.START_ROW - 2 >= 0 ? CONFIG.START_ROW - 2 : 0;
+    const maxColIndex = Math.max(colIndex + 2, 10);
+    
+    // Tải toàn bộ vùng dữ liệu để đọc header và cập nhật
     await sheet.loadCells({
       startRowIndex: 0,
       endRowIndex: maxRow,
-      startColumnIndex: colIndex,
-      endColumnIndex: colIndex + 2
+      startColumnIndex: 0,
+      endColumnIndex: maxColIndex
     });
+    
+    // Tự động tìm cột SHIPPING UNIT theo tên cột tiêu đề
+    let shipperColIndex = colIndex + 1; // Mặc định là cột bên phải cột Status
+    for (let c = 0; c < maxColIndex; c++) {
+      const cell = sheet.getCell(headerRowIndex, c);
+      if (cell && cell.value) {
+        const valStr = String(cell.value).toUpperCase().trim();
+        if (
+          valStr === 'SHIPPING UNIT' || 
+          valStr === 'SHIPPING' || 
+          valStr === 'SHIPPER' || 
+          valStr === 'ĐƠN VỊ VẬN CHUYỂN' || 
+          valStr === 'ĐVVC'
+        ) {
+          shipperColIndex = c;
+          break;
+        }
+      }
+    }
+    
+    log(`📊 Định vị cột: Status ở cột ${colIndex + 1}, Shipping Unit ở cột ${shipperColIndex + 1}`);
     
     for (const result of results) {
       const cellStatus = sheet.getCell(result.row - 1, colIndex);
       cellStatus.value = result.text;
       
-      const cellShipper = sheet.getCell(result.row - 1, colIndex + 1);
+      const cellShipper = sheet.getCell(result.row - 1, shipperColIndex);
       cellShipper.value = result.shipper || '';
     }
     
