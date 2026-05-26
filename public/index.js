@@ -145,7 +145,7 @@ function toggleHoursFields() {
   }
 }
 
-async function saveConfig() {
+async function saveConfig(isSilent = false) {
   const h = parseInt(document.getElementById('cfg-sync-hours').value) || 0;
   let m = parseInt(document.getElementById('cfg-sync-minutes').value) || 0;
   let s = parseInt(document.getElementById('cfg-sync-seconds').value) || 0;
@@ -191,14 +191,20 @@ async function saveConfig() {
     });
     const result = await res.json();
     if (result.success) {
-      alert('Đã lưu cấu hình thành công!');
+      if (!isSilent) {
+        alert('Đã lưu cấu hình thành công!');
+      }
       const pad = (num) => String(num).padStart(2, '0');
       document.getElementById('display-sync-interval').innerText = `${pad(h)}:${pad(m)}:${pad(s)}`;
     } else {
-      alert('Lỗi khi lưu cấu hình: ' + result.message);
+      if (!isSilent) {
+        alert('Lỗi khi lưu cấu hình: ' + result.message);
+      }
     }
   } catch (err) {
-    alert('Lỗi kết nối: ' + err.message);
+    if (!isSilent) {
+      alert('Lỗi kết nối: ' + err.message);
+    }
   }
 }
 
@@ -318,6 +324,9 @@ async function loadLogs() {
 async function triggerCheck() {
   if (isChecking) return;
   isChecking = true;
+  
+  // Tự động lưu cấu hình hiện tại trước khi đối chiếu
+  await saveConfig(true);
   
   const filterDate = document.getElementById('select-date').value;
   const pagesToFetch = document.getElementById('select-pages').value;
