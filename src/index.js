@@ -7,6 +7,13 @@ const path = require('path');
 
 // ====================== CẤU HÌNH ======================
 const CONFIG = {
+  // Google Sheets
+  GOOGLE_SHEET_ID: process.env.GOOGLE_SHEET_ID,
+  SHEET_NAME: process.env.SHEET_NAME || 'LIST WAYBILL SCAN MARCH ',
+  WAYBILL_COLUMN_INDEX: parseInt(process.env.WAYBILL_COL || 2) - 1, // B = Cột 2 (0-based: index 1)
+  STATUS_COLUMN_INDEX: parseInt(process.env.RESULT_COL || 3) - 1,  // C = Cột 3 (0-based: index 2)
+  START_ROW: parseInt(process.env.HEADER_ROW || 1) + 1,            // Dữ liệu từ dòng HEADER_ROW + 1 (mặc định dòng 2)
+
   // G-Solution
   GS_BASE_URL: process.env.GS_BASE_URL || 'https://g-solution.vn',
   GS_LOGIN_PATH: '/api/users/login/password',
@@ -14,18 +21,16 @@ const CONFIG = {
   GS_EMAIL: process.env.GS_EMAIL,
   GS_PASSWORD: process.env.GS_PASSWORD,
   GS_COUNTRY_CODE: parseInt(process.env.GS_COUNTRY_CODE) || 66,
-  GS_SHIPPED_STATUS: 'shipped',
-  
+  GS_SHIPPED_STATUS: process.env.GS_SHIPPED_STATUS || 'shipped',
+
   // Batch config
   BATCH_NUMBER: parseInt(process.env.BATCH_NUMBER) || 1,
   TOTAL_BATCHES: parseInt(process.env.TOTAL_BATCHES) || 1,
   
-  // Google Sheet
-  SHEET_NAME: 'LIST WAYBILL SCAN MARCH',
-  WAYBILL_COLUMN: 2,  // Cột B
-  RESULT_COLUMN: 3,    // Cột C
-  
   // Telegram
+  TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
+  TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID || '-5245305331',
+  TELEGRAM_TAGS: process.env.TELEGRAM_TAGS || '@kycgipvn @namnggg1805 @Dduong712 @Linda_Huong',
   ENABLE_TELEGRAM: true,
   
   // Giờ hoạt động (giờ Việt Nam)
