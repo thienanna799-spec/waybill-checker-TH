@@ -44,7 +44,7 @@ async function readWaybillsFromSheet() {
           waybills[wb] = [];
         }
         waybills[wb].push({
-          row: index + 2, // +2 vì dòng 1 là header
+          row: row.rowNumber, // Sử dụng thuộc tính rowNumber gốc của google-spreadsheet
           currentStatus: row._rawData[CONFIG.RESULT_COLUMN - 1] || ''
         });
         totalCount++;
@@ -83,9 +83,18 @@ async function writeResultsToSheet(results) {
     const maxRow = Math.max(...results.map(r => r.row));
     const colIndex = CONFIG.RESULT_COLUMN - 1;
     
+    // Xác định cột SHIPPING UNIT
+    let shipperColIndex = CONFIG.SHIPPER_COLUMN ? (CONFIG.SHIPPER_COLUMN - 1) : null;
+    
     // Dòng header (dòng tiêu đề là CONFIG.START_ROW - 2)
     const headerRowIndex = CONFIG.START_ROW - 2 >= 0 ? CONFIG.START_ROW - 2 : 0;
-    const maxColIndex = Math.max(colIndex + 2, 10);
+    
+    // Tính toán maxColIndex động để bao phủ đầy đủ tất cả các cột đích
+    const colIndices = [colIndex];
+    if (shipperColIndex !== null) {
+      colIndices.push(shipperColIndex);
+    }
+    const maxColIndex = Math.max(...colIndices, 9) + 2;
     
     // Tải toàn bộ vùng dữ liệu để đọc header và cập nhật
     await sheet.loadCells({
@@ -94,9 +103,6 @@ async function writeResultsToSheet(results) {
       startColumnIndex: 0,
       endColumnIndex: maxColIndex
     });
-    
-    // Xác định cột SHIPPING UNIT
-    let shipperColIndex = CONFIG.SHIPPER_COLUMN ? (CONFIG.SHIPPER_COLUMN - 1) : null;
     
     // Nếu không cấu hình rõ ràng, tự động tìm cột theo tên cột tiêu đề
     if (shipperColIndex === null) {
