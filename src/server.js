@@ -2,8 +2,8 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const moment = require('moment-timezone');
-const { main, syncDvvcOnly, loadActiveConfig, updateConfigFromJSON } = require('./index');
-const { isWithinWorkingHours } = require('./config');
+const { main, syncDvvcOnly } = require('./index');
+const { loadActiveConfig, updateConfigFromJSON, isWithinWorkingHours } = require('./config');
 const axios = require('axios');
 
 // Nạp biến môi trường
@@ -124,7 +124,6 @@ let lastReportMinuteStr = '';
 
 const runDvvcLoop = async () => {
   if (isRunning || isDvvcRunning) return;
-  if (!isWithinWorkingHours()) return;
   isDvvcRunning = true;
   try {
     console.log('[Scheduler] Bắt đầu quét ĐVVC nhanh...');
