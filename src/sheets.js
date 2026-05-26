@@ -48,7 +48,7 @@ function getSpreadsheetDoc() {
 /**
  * Đọc waybill từ Google Sheet (Hỗ trợ trùng lặp và lọc theo ngày)
  */
-async function readWaybillsFromSheet(filterDate = null) {
+async function readWaybillsFromSheet(filterDate = null, dvvcOnly = false) {
   log('📖 Đang đọc waybill từ Google Sheet...');
   
   try {
@@ -58,6 +58,38 @@ async function readWaybillsFromSheet(filterDate = null) {
     
     if (!sheet) {
       throw new Error(`Không tìm thấy sheet: ${CONFIG.SHEET_NAME}`);
+    }
+    
+    // Tự động tìm cột ĐVVC theo tên cột tiêu đề nếu không cấu hình rõ ràng
+    let shipperColIndex = CONFIG.SHIPPER_COLUMN ? (CONFIG.SHIPPER_COLUMN - 1) : null;
+    if (shipperColIndex === null) {
+      const headerRowIndex = CONFIG.START_ROW - 2 >= 0 ? CONFIG.START_ROW - 2 : 0;
+      try {
+        await sheet.loadCells({
+          startRowIndex: headerRowIndex,
+          endRowIndex: headerRowIndex + 1,
+          startColumnIndex: 0,
+          endColumnIndex: 30
+        });
+        for (let c = 0; c < 30; c++) {
+          const cell = sheet.getCell(headerRowIndex, c);
+          if (cell && cell.value) {
+            const valStr = String(cell.value).toUpperCase().trim();
+            if (
+              valStr === 'SHIPPING UNIT' || 
+              valStr === 'SHIPPING' || 
+              valStr === 'SHIPPER' || 
+              valStr === 'ĐƠN VỊ VẬN CHUYỂN' || 
+              valStr === 'ĐVVC'
+            ) {
+              shipperColIndex = c;
+              break;
+            }
+          }
+        }
+      } catch (err) {
+        log(`⚠️ Không thể tự động quét cột ĐVVC từ header: ${err.message}`);
+      }
     }
     
     const rows = await sheet.getRows();
@@ -80,14 +112,20 @@ async function readWaybillsFromSheet(filterDate = null) {
         // Trạng thái hiện tại trong sheet
         const currentStatus = (row._rawData[CONFIG.RESULT_COLUMN - 1] || '').trim();
         
-        // ĐVVC hiện tại trong sheet (nếu có cấu hình)
-        const currentShipper = CONFIG.SHIPPER_COLUMN ? (row._rawData[CONFIG.SHIPPER_COLUMN - 1] || '').trim() : '';
+        // ĐVVC hiện tại trong sheet (nếu tìm thấy hoặc cấu hình)
+        const currentShipper = shipperColIndex !== null ? (row._rawData[shipperColIndex] || '').trim() : '';
         
-        // Trạng thái cuối cùng (đã giao, đã huỷ, đã hoàn) thì không cần quét lại nữa
-        const isFinalStatus = currentStatus === 'Delivered' || currentStatus === 'Canceled' || currentStatus === 'Returned';
-        
-        if (isFinalStatus) {
-          return; // Bỏ qua dòng đã hoàn thành cuối cùng
+        if (dvvcOnly) {
+          // Chế độ quét ĐVVC liên tục: chỉ quét dòng chưa có ĐVVC
+          if (currentShipper) {
+            return;
+          }
+        } else {
+          // Chế độ quét trạng thái định kỳ: bỏ qua dòng đã giao/huỷ/hoàn thành
+          const isFinalStatus = currentStatus === 'Delivered' || currentStatus === 'Canceled' || currentStatus === 'Returned';
+          if (isFinalStatus) {
+            return; 
+          }
         }
         
         if (!waybills[wb]) {
