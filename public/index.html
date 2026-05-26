@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Waybill Checker Dashboard</title>
+  <!-- Google Fonts: Inter & JetBrains Mono for logs -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --bg-card: rgba(17, 25, 40, 0.75);
+      --bg-card-hover: rgba(22, 32, 51, 0.85);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --primary: #3b82f6;
+      --primary-glow: rgba(59, 130, 246, 0.35);
+      --success: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.25);
+      --warning: #f59e0b;
+      --warning-glow: rgba(245, 158, 11, 0.25);
+      --danger: #ef4444;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+      background-attachment: fixed;
+      font-family: var(--font-sans);
+      color: var(--text-main);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .app-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* Header section */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1.5rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      background: linear-gradient(135deg, var(--primary), var(--success));
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.25rem;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    }
+
+    .brand-text h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      background: linear-gradient(to right, #ffffff, #d1d5db);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-text p {
+      font-size: 0.825rem;
+      color: var(--text-muted);
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.625rem 1.25rem;
+      border-radius: 8px;
+      font-family: var(--font-sans);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid transparent;
+      outline: none;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: white;
+      box-shadow: 0 4px 14px var(--primary-glow);
+    }
+    .btn-primary:hover:not(:disabled) {
+      background-color: #2563eb;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px var(--primary-glow);
+    }
+    .btn-primary:active:not(:disabled) {
+      transform: translateY(0);
+    }
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background-color: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      border-color: var(--border-color);
+    }
+    .btn-secondary:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Cards grid */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      background-color: var(--bg-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: transparent;
+    }
+
+    .card-status-success::before {
+      background: var(--success);
+    }
+    .card-status-running::before {
+      background: var(--warning);
+    }
+    .card-status-failed::before {
+      background: var(--danger);
+    }
+
+    .card-title {
+      font-size: 0.825rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-value {
+      font-size: 2.25rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .card-value-small {
+      font-size: 1rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .card-footer {
+      font-size: 0.775rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Pulse animations */
+    .pulse-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      position: relative;
+    }
+
+    .pulse-dot-success {
+      background-color: var(--success);
+      box-shadow: 0 0 0 0 var(--success-glow);
+      animation: pulse-green 2s infinite;
+    }
+    .pulse-dot-warning {
+      background-color: var(--warning);
+      box-shadow: 0 0 0 0 var(--warning-glow);
+      animation: pulse-yellow 2s infinite;
+    }
+    .pulse-dot-danger {
+      background-color: var(--danger);
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+      animation: pulse-red 2s infinite;
+    }
+
+    @keyframes pulse-green {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    @keyframes pulse-yellow {
+      0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+    @keyframes pulse-red {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    /* Progress bar */
+    .progress-container {
+      margin-top: 10px;
+    }
+
+    .progress-bar-bg {
+      background-color: rgba(255, 255, 255, 0.05);
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .progress-bar-fill {
+      background: linear-gradient(to right, var(--primary), var(--success));
+      height: 100%;
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Two column layout */
+    .details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 968px) {
+      .details-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Waybills list container */
+    .waybills-list-card {
+      display: flex;
+      flex-direction: column;
+      height: 520px;
+    }
+
+    .waybills-list-container {
+      flex-grow: 1;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      background-color: rgba(0, 0, 0, 0.2);
+    }
+
+    .waybills-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      text-align: left;
+    }
+
+    .waybills-table th {
+      background-color: rgba(255, 255, 255, 0.02);
+      padding: 10px 14px;
+      color: var(--text-muted);
+      font-weight: 500;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(10px);
+    }
+
+    .waybills-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .waybills-table tr:hover {
+      background-color: rgba(255, 255, 255, 0.01);
+    }
+
+    .waybill-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.725rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 12px;
+      text-transform: uppercase;
+    }
+
+    .waybill-badge-unshipped {
+      background-color: rgba(245, 158, 11, 0.12);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+    }
+    .waybill-badge-cancel {
+      background-color: rgba(239, 68, 68, 0.12);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+    .waybill-badge-other {
+      background-color: rgba(59, 130, 246, 0.12);
+      color: var(--primary);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+    }
+
+    /* Empty state */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-muted);
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .empty-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+      opacity: 0.6;
+    }
+
+    /* Live terminal logs */
+    .terminal-card {
+      display: flex;
+      flex-direction: column;
+      height: 520px;
+    }
+
+    .terminal-body {
+      flex-grow: 1;
+      background-color: #05070c;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: #38bdf8;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* Spinner */
+    .spinner {
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      border-top: 2px solid white;
+      width: 14px;
+      height: 14px;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Search/Filter Bar */
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .search-input {
+      flex-grow: 1;
+      background-color: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: white;
+      font-size: 0.85rem;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-glow);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <header>
+      <div class="brand">
+        <div class="logo-icon">📦</div>
+        <div class="brand-text">
+          <h1>Waybill Checker</h1>
+          <p>Hệ thống Đối chiếu Trạng thái Đơn hàng Tự động</p>
+        </div>
+      </div>
+      <div class="actions">
+        <select id="select-interval" class="search-input" style="width: 170px; margin-bottom: 0;" onchange="updateInterval()">
+          <option value="5">Chu kỳ: 5 phút</option>
+          <option value="10">Chu kỳ: 10 phút</option>
+          <option value="15">Chu kỳ: 15 phút</option>
+          <option value="30">Chu kỳ: 30 phút</option>
+          <option value="60">Chu kỳ: 60 phút</option>
+        </select>
+        <select id="select-date" class="search-input" style="width: 170px; margin-bottom: 0;">
+          <option value="">Cả 3 ngày gần đây</option>
+          <!-- Dynamic options loaded by JS -->
+        </select>
+        <select id="select-pages" class="search-input" style="width: 170px; margin-bottom: 0;">
+          <option value="15">Quét chuẩn (15 trang)</option>
+          <option value="5">Quét nhanh (5 trang)</option>
+          <option value="30">Quét sâu (30 trang)</option>
+        </select>
+        <button id="btn-trigger" class="btn btn-primary" onclick="triggerCheck()">
+          <span id="trigger-text">Chạy đối chiếu ngay</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="dashboard-grid">
+      <!-- Card 1: System Status -->
+      <div id="card-system" class="card card-status-success">
+        <div class="card-title">
+          <span>Hệ thống</span>
+          <span id="status-pulse" class="pulse-dot pulse-dot-success"></span>
+        </div>
+        <div id="status-label" class="card-value" style="font-size: 1.75rem;">Đang chạy</div>
+        <div class="card-footer">
+          <span>Tiến trình nền (PM2): <b>ONLINE</b></span>
+        </div>
+      </div>
+
+      <!-- Card 2: Run Stats -->
+      <div class="card">
+        <div class="card-title">Kết quả Đợt Check Cuối</div>
+        <div class="card-value">
+          <span id="stats-total">0</span>
+          <span class="card-value-small">đơn scan</span>
+        </div>
+        <div class="progress-container">
+          <div class="progress-bar-bg">
+            <div id="progress-bar" class="progress-bar-fill"></div>
+          </div>
+          <div class="card-footer" style="justify-content: space-between;">
+            <span>Đơn hoạt động: <b id="stats-shipped" style="color: var(--success);">0</b></span>
+            <span>Chưa gửi/Lỗi: <b id="stats-unshipped" style="color: var(--warning);">0</b></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Execution Info -->
+      <div class="card">
+        <div class="card-title">Thời gian thực thi</div>
+        <div id="exec-elapsed" class="card-value">0.00 <span class="card-value-small">giây</span></div>
+        <div class="card-footer">
+          <span>Lần check cuối: <b id="exec-last-run">Chưa có dữ liệu</b></span>
+        </div>
+      </div>
+
+      <!-- Card 4: Telegram Status -->
+      <div class="card">
+        <div class="card-title">Telegram Alert Bot</div>
+        <div class="card-value" style="font-size: 1.75rem; color: var(--success);">Đã kết nối</div>
+        <div class="card-footer" style="justify-content: space-between; width: 100%;">
+          <span>Nhóm: <b>-5245305331</b></span>
+          <button class="btn btn-secondary" style="padding: 2px 6px; font-size: 0.65rem;" onclick="testTelegram()">Test Bot</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="details-grid">
+      <!-- Left Column: Waybills List -->
+      <div class="card waybills-list-card">
+        <div class="section-title">
+          <span>🚨 Đơn lỗi / Chưa gửi trong ngày</span>
+          <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;" onclick="copyUnshippedList()">Sao chép list</button>
+        </div>
+        <div class="filter-bar">
+          <input type="text" id="search-waybill" class="search-input" placeholder="Tìm kiếm mã tracking..." oninput="filterWaybills()">
+        </div>
+        <div class="waybills-list-container">
+          <table class="waybills-table">
+            <thead>
+              <tr>
+                <th style="width: 80px;">Dòng</th>
+                <th>Mã Waybill (Tracking Number)</th>
+                <th style="width: 140px; text-align: center;">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody id="waybills-list-body">
+              <tr>
+                <td colspan="3">
+                  <div class="empty-state">
+                    <div class="empty-icon">✓</div>
+                    <p>Chưa có dữ liệu kiểm tra. Nhấp "Chạy đối chiếu" để bắt đầu.</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Right Column: Terminal Logs -->
+      <div class="card terminal-card">
+        <div class="section-title">
+          <span>🖥️ Nhật ký hệ thống (Logs)</span>
+          <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;" onclick="loadLogs()">Làm mới logs</button>
+        </div>
+        <div id="terminal-body" class="terminal-body">Đang tải nhật ký...</div>
+      </div>
+    </div>
+
+    <!-- Settings Card -->
+    <div class="card" style="margin-top: 1.5rem; margin-bottom: 2rem;">
+      <div class="section-title">
+        <span>⚙️ Cấu hình hệ thống (Settings)</span>
+        <div style="display: flex; gap: 8px;">
+          <button id="btn-test-telegram" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.825rem;" onclick="testTelegram()">Test Bot</button>
+          <button class="btn btn-primary" style="padding: 6px 16px; font-size: 0.825rem;" onclick="saveConfig()">Lưu cấu hình</button>
+        </div>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+        
+        <!-- Cấu hình quét & Giờ chạy -->
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <h3 style="font-size: 0.9rem; color: var(--primary); border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin: 0 0 4px 0;">⏰ Lịch quét & Giờ hoạt động</h3>
+          
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="checkbox" id="cfg-bypass-hours" style="width: 18px; height: 18px; cursor: pointer;" onchange="toggleHoursFields()">
+            <label for="cfg-bypass-hours" style="font-size: 0.85rem; font-weight: 500; cursor: pointer; user-select: none;">Chạy 24/7 (Bỏ qua giờ giới hạn)</label>
+          </div>
+          
+          <div id="cfg-hours-group" style="display: flex; gap: 10px; align-items: center; transition: opacity 0.2s;">
+            <div style="flex: 1;">
+              <label style="font-size: 0.775rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Giờ bắt đầu</label>
+              <select id="cfg-run-from" class="search-input" style="width: 100%; margin-bottom: 0;">
+                <!-- Filled via JS -->
+              </select>
+            </div>
+            <div style="flex: 1;">
+              <label style="font-size: 0.775rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Giờ kết thúc</label>
+              <select id="cfg-run-to" class="search-input" style="width: 100%; margin-bottom: 0;">
+                <!-- Filled via JS -->
+              </select>
+            </div>
+          </div>
+          
+          <div>
+            <label style="font-size: 0.775rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Chu kỳ quét tự động</label>
+            <select id="cfg-sync-interval" class="search-input" style="width: 100%; margin-bottom: 0;">
+              <option value="5">Mỗi 5 phút</option>
+              <option value="10">Mỗi 10 phút</option>
+              <option value="15">Mỗi 15 phút</option>
+              <option value="30">Mỗi 30 phút</option>
+              <option value="60">Mỗi 60 phút</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Cấu hình Telegram -->
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <h3 style="font-size: 0.9rem; color: var(--success); border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin: 0 0 4px 0;">💬 Cấu hình Telegram Alert</h3>
+          
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="checkbox" id="cfg-enable-telegram" style="width: 18px; height: 18px; cursor: pointer;">
+            <label for="cfg-enable-telegram" style="font-size: 0.85rem; font-weight: 500; cursor: pointer; user-select: none;">Bật gửi tin báo lỗi Telegram</label>
+          </div>
+          
+          <div>
+            <label style="font-size: 0.775rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Token Bot Telegram</label>
+            <input type="password" id="cfg-telegram-token" class="search-input" style="width: 100%; margin-bottom: 0;" placeholder="Nhập token bot...">
+          </div>
+          
+          <div>
+            <label style="font-size: 0.775rem; color: var(--text-muted); display: block; margin-bottom: 4px;">ID Nhóm / Kênh nhận tin</label>
+            <input type="text" id="cfg-telegram-chat" class="search-input" style="width: 100%; margin-bottom: 0;" placeholder="Ví dụ: -5245305331">
+          </div>
+          
+          <div>
+            <label style="font-size: 0.775rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Tags người nhận tin khi có sự cố</label>
+            <input type="text" id="cfg-telegram-tags" class="search-input" style="width: 100%; margin-bottom: 0;" placeholder="@user1 @user2">
+          </div>
+        </div>
+        
+        <!-- Cấu hình Google Sheets -->
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <h3 style="font-size: 0.9rem; color: var(--warning); border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin: 0 0 4px 0;">📊 Google Sheets & G-Solution</h3>
+          
+          <div>
+            <label style="font-size: 0.775rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Google Sheet ID (Spreadsheet ID)</label>
+            <input type="text" id="cfg-sheet-id" class="search-input" style="width: 100%; margin-bottom: 0;" placeholder="ID tài liệu Google Sheet...">
+          </div>
+          
+          <div>
+            <label style="font-size: 0.775rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Tên Trang Tính (Sheet Name)</label>
+            <input type="text" id="cfg-sheet-name" class="search-input" style="width: 100%; margin-bottom: 0;" placeholder="Ví dụ: LIST WAYBILL SCAN MARCH ">
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 8px;">
+            <div>
+              <label style="font-size: 0.725rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Cột Waybill</label>
+              <input type="number" id="cfg-col-waybill" class="search-input" style="width: 100%; margin-bottom: 0; padding: 6px;" min="1" max="100">
+            </div>
+            <div>
+              <label style="font-size: 0.725rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Cột Trạng Thái</label>
+              <input type="number" id="cfg-col-result" class="search-input" style="width: 100%; margin-bottom: 0; padding: 6px;" min="1" max="100">
+            </div>
+            <div>
+              <label style="font-size: 0.725rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Dòng Tiêu Đề</label>
+              <input type="number" id="cfg-row-header" class="search-input" style="width: 100%; margin-bottom: 0; padding: 6px;" min="0" max="100">
+            </div>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let isChecking = false;
+    let unshippedList = [];
+
+    // Tự động load dữ liệu khi mở trang
+    document.addEventListener("DOMContentLoaded", () => {
+      populateDates();
+      fetchStatus();
+      fetchConfig();
+      loadLogs();
+      // Polling để cập nhật trạng thái mới nhất
+      setInterval(fetchStatus, 5000);
+      setInterval(loadLogs, 10000);
+    });
+
+    function populateDates() {
+      const selectDate = document.getElementById('select-date');
+      const dates = [];
+      for (let i = 0; i < 3; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+        const displayDate = `${dd}/${mm}`;
+        
+        let label = '';
+        if (i === 0) label = 'Hôm nay';
+        else if (i === 1) label = 'Hôm qua';
+        else if (i === 2) label = 'Hôm kia';
+        
+        dates.push({ value: dateStr, text: `${label} (${displayDate})` });
+      }
+      
+      selectDate.innerHTML = `<option value="">Cả 3 ngày gần đây</option>` + 
+        dates.map(d => `<option value="${d.value}">${d.text}</option>`).join('');
+    }
+
+    async function fetchConfig() {
+      try {
+        const res = await fetch('/api/config');
+        const data = await res.json();
+        
+        // Cập nhật selector chu kỳ ở header
+        if (data.syncInterval) {
+          document.getElementById('select-interval').value = data.syncInterval;
+          document.getElementById('cfg-sync-interval').value = data.syncInterval;
+        }
+
+        // Đổ dữ liệu vào select Giờ bắt đầu/kết thúc
+        const fromSelect = document.getElementById('cfg-run-from');
+        const toSelect = document.getElementById('cfg-run-to');
+        
+        let fromOpts = '';
+        for (let h = 0; h < 24; h++) {
+          fromOpts += `<option value="${h}">${String(h).padStart(2, '0')}:00</option>`;
+        }
+        fromSelect.innerHTML = fromOpts;
+        
+        let toOpts = '';
+        for (let h = 1; h <= 24; h++) {
+          toOpts += `<option value="${h}">${String(h).padStart(2, '0')}:00</option>`;
+        }
+        toSelect.innerHTML = toOpts;
+        
+        // Gán các giá trị từ config
+        document.getElementById('cfg-bypass-hours').checked = !!data.bypassHours;
+        document.getElementById('cfg-run-from').value = data.runFromHour !== undefined ? data.runFromHour : 18;
+        document.getElementById('cfg-run-to').value = data.runToHour !== undefined ? data.runToHour : 24;
+        
+        document.getElementById('cfg-enable-telegram').checked = !!data.enableTelegram;
+        document.getElementById('cfg-telegram-token').value = data.telegramBotToken || '';
+        document.getElementById('cfg-telegram-chat').value = data.telegramChatId || '';
+        document.getElementById('cfg-telegram-tags').value = data.telegramTags || '';
+        
+        document.getElementById('cfg-sheet-id').value = data.googleSheetId || '';
+        document.getElementById('cfg-sheet-name').value = data.sheetName || '';
+        document.getElementById('cfg-col-waybill').value = data.waybillCol !== undefined ? data.waybillCol : 2;
+        document.getElementById('cfg-col-result').value = data.resultCol !== undefined ? data.resultCol : 3;
+        document.getElementById('cfg-row-header').value = data.headerRow !== undefined ? data.headerRow : 1;
+        
+        toggleHoursFields();
+      } catch (err) {
+        console.error('Lỗi khi tải cấu hình:', err);
+      }
+    }
+
+    function toggleHoursFields() {
+      const bypass = document.getElementById('cfg-bypass-hours').checked;
+      const group = document.getElementById('cfg-hours-group');
+      if (bypass) {
+        group.style.opacity = '0.35';
+        document.getElementById('cfg-run-from').disabled = true;
+        document.getElementById('cfg-run-to').disabled = true;
+      } else {
+        group.style.opacity = '1';
+        document.getElementById('cfg-run-from').disabled = false;
+        document.getElementById('cfg-run-to').disabled = false;
+      }
+    }
+
+    async function saveConfig() {
+      const payload = {
+        syncInterval: parseInt(document.getElementById('cfg-sync-interval').value),
+        bypassHours: document.getElementById('cfg-bypass-hours').checked,
+        runFromHour: parseInt(document.getElementById('cfg-run-from').value),
+        runToHour: parseInt(document.getElementById('cfg-run-to').value),
+        
+        enableTelegram: document.getElementById('cfg-enable-telegram').checked,
+        telegramBotToken: document.getElementById('cfg-telegram-token').value,
+        telegramChatId: document.getElementById('cfg-telegram-chat').value,
+        telegramTags: document.getElementById('cfg-telegram-tags').value,
+        
+        googleSheetId: document.getElementById('cfg-sheet-id').value,
+        sheetName: document.getElementById('cfg-sheet-name').value,
+        waybillCol: parseInt(document.getElementById('cfg-col-waybill').value),
+        resultCol: parseInt(document.getElementById('cfg-col-result').value),
+        headerRow: parseInt(document.getElementById('cfg-row-header').value)
+      };
+      
+      try {
+        const res = await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert('Đã lưu cấu hình thành công!');
+          // Cập nhật lại select ở header
+          document.getElementById('select-interval').value = payload.syncInterval;
+        } else {
+          alert('Lỗi khi lưu cấu hình: ' + result.message);
+        }
+      } catch (err) {
+        alert('Lỗi kết nối: ' + err.message);
+      }
+    }
+
+    async function updateInterval() {
+      const val = document.getElementById('select-interval').value;
+      document.getElementById('cfg-sync-interval').value = val;
+      await saveConfig();
+    }
+
+    async function fetchStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        
+        // Cập nhật card trạng thái hệ thống
+        const cardSys = document.getElementById('card-system');
+        const pulse = document.getElementById('status-pulse');
+        const statusLabel = document.getElementById('status-label');
+        
+        if (data.status === 'running' || isChecking) {
+          cardSys.className = "card card-status-running";
+          pulse.className = "pulse-dot pulse-dot-warning";
+          statusLabel.innerText = "Đang check...";
+          document.getElementById('btn-trigger').disabled = true;
+          document.getElementById('btn-trigger').innerHTML = `<span class="spinner"></span> Chạy đối chiếu...`;
+        } else if (data.status === 'failed') {
+          cardSys.className = "card card-status-failed";
+          pulse.className = "pulse-dot pulse-dot-danger";
+          statusLabel.innerText = "Lỗi check";
+          document.getElementById('btn-trigger').disabled = false;
+          document.getElementById('btn-trigger').innerText = `Chạy đối chiếu ngay`;
+        } else {
+          cardSys.className = "card card-status-success";
+          pulse.className = "pulse-dot pulse-dot-success";
+          statusLabel.innerText = "Sẵn sàng";
+          document.getElementById('btn-trigger').disabled = false;
+          document.getElementById('btn-trigger').innerText = `Chạy đối chiếu ngay`;
+        }
+
+        // Cập nhật card thống kê
+        if (data.stats) {
+          document.getElementById('stats-total').innerText = data.stats.total || 0;
+          document.getElementById('stats-shipped').innerText = data.stats.shipped || 0;
+          document.getElementById('stats-unshipped').innerText = data.stats.unshipped || 0;
+          
+          // Cập nhật progress bar
+          if (data.stats.total > 0) {
+            const percent = (data.stats.shipped / data.stats.total) * 100;
+            document.getElementById('progress-bar').style.width = `${percent}%`;
+          } else {
+            document.getElementById('progress-bar').style.width = `0%`;
+          }
+        }
+
+        // Cập nhật thời gian thực thi
+        if (data.elapsedSeconds !== undefined) {
+          document.getElementById('exec-elapsed').innerHTML = `${data.elapsedSeconds} <span class="card-value-small">giây</span>`;
+        }
+        if (data.lastRun) {
+          document.getElementById('exec-last-run').innerText = data.lastRun;
+        }
+
+        // Lưu trữ danh sách chưa gửi và render ra bảng
+        if (data.unshippedWaybills) {
+          unshippedList = data.unshippedWaybills;
+          renderWaybillsTable(unshippedList);
+        }
+      } catch (err) {
+        console.error('Lỗi khi fetch status:', err);
+      }
+    }
+
+    function renderWaybillsTable(list) {
+      const tbody = document.getElementById('waybills-list-body');
+      
+      if (list.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="3">
+              <div class="empty-state">
+                <div class="empty-icon" style="color: var(--success);">✓</div>
+                <p>Tuyệt vời! Tất cả đơn hàng đều hoạt động tốt.</p>
+              </div>
+            </td>
+          </tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map((item, idx) => {
+        const waybill = typeof item === 'string' ? item : item.waybill;
+        const status = typeof item === 'string' ? 'chưa gửi' : item.status;
+        
+        let badgeClass = 'waybill-badge-unshipped';
+        if (status === 'cancel' || status === 'cancelled') {
+          badgeClass = 'waybill-badge-cancel';
+        } else if (status !== 'chưa gửi') {
+          badgeClass = 'waybill-badge-other';
+        }
+
+        return `
+          <tr>
+            <td style="color: var(--text-muted); font-family: var(--font-mono);">${idx + 2}</td>
+            <td style="font-family: var(--font-mono); font-weight: 500;">${waybill}</td>
+            <td style="text-align: center;">
+              <span class="waybill-badge ${badgeClass}">${status}</span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function loadLogs() {
+      try {
+        const res = await fetch('/api/logs');
+        const data = await res.json();
+        const term = document.getElementById('terminal-body');
+        term.innerText = data.logs || 'Chưa có dữ liệu nhật ký.';
+        term.scrollTop = term.scrollHeight;
+      } catch (err) {
+        console.error('Lỗi tải logs:', err);
+      }
+    }
+
+    async function triggerCheck() {
+      if (isChecking) return;
+      isChecking = true;
+      
+      const filterDate = document.getElementById('select-date').value;
+      const pagesToFetch = document.getElementById('select-pages').value;
+
+      const btn = document.getElementById('btn-trigger');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner"></span> Đang chạy...`;
+      
+      try {
+        const res = await fetch('/api/trigger', { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filterDate, pagesToFetch })
+        });
+        const result = await res.json();
+        
+        if (result.success) {
+          alert('Check hoàn thành thành công!');
+        } else {
+          alert('Lỗi: ' + result.message);
+        }
+      } catch (err) {
+        alert('Lỗi kết nối: ' + err.message);
+      } finally {
+        isChecking = false;
+        fetchStatus();
+        loadLogs();
+      }
+    }
+
+    async function testTelegram() {
+      const token = document.getElementById('cfg-telegram-token').value.trim();
+      const chatId = document.getElementById('cfg-telegram-chat').value.trim();
+      
+      const btn = document.getElementById('btn-test-telegram');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerText = 'Đang gửi...';
+      }
+      
+      try {
+        const res = await fetch('/api/test-telegram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ telegramBotToken: token, telegramChatId: chatId })
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert('Đã gửi tin nhắn test qua Telegram bot thành công! Vui lòng kiểm tra nhóm/kênh Telegram của bạn.');
+        } else {
+          alert('Gửi Telegram thất bại: ' + result.message);
+        }
+      } catch (err) {
+        alert('Lỗi: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = 'Test Bot';
+        }
+      }
+    }
+
+    function copyUnshippedList() {
+      if (unshippedList.length === 0) {
+        alert('Không có mã nào để copy');
+        return;
+      }
+      const text = unshippedList.map(item => typeof item === 'string' ? item : item.waybill).join('\n');
+      navigator.clipboard.writeText(text)
+        .then(() => alert(`Đã copy ${unshippedList.length} mã waybill vào Clipboard!`))
+        .catch(err => alert('Không thể copy: ' + err));
+    }
+
+    function filterWaybills() {
+      const q = document.getElementById('search-waybill').value.toLowerCase().trim();
+      if (!q) {
+        renderWaybillsTable(unshippedList);
+        return;
+      }
+      const filtered = unshippedList.filter(item => {
+        const waybill = typeof item === 'string' ? item : item.waybill;
+        return waybill.toLowerCase().includes(q);
+      });
+      renderWaybillsTable(filtered);
+    }
+  </script>
+</body>
+</html>
