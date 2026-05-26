@@ -200,3 +200,31 @@ git push -u origin main
 | Debug tự động tìm đúng field waybill | ✅ |
 | Gửi Telegram khi có lỗi | ✅ |
 | Log đầy đủ để xem lịch sử | ✅ |
+
+---
+
+## 🔄 Tự động push Git mỗi 10 phút (Chạy nền)
+
+Hệ thống đi kèm dịch vụ **git-pusher** tự động chạy ngầm bằng PM2 để theo dõi các thay đổi local và đẩy lên GitHub mỗi 10 phút.
+
+### Lệnh quản lý dịch vụ:
+
+- **Khởi động dịch vụ:**
+  ```bash
+  npm run git-pusher:start
+  ```
+
+- **Dừng dịch vụ:**
+  ```bash
+  npm run git-pusher:stop
+  ```
+
+- **Xem log hoạt động:**
+  ```bash
+  npm run git-pusher:logs
+  ```
+
+- **Xem trạng thái dịch vụ:**
+  ```bash
+  npm run git-pusher:status
+  ```
