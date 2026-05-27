@@ -14,6 +14,9 @@ on:
   pull_request:
     branches: [ main, master ]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 # Chạy song song 5 batch để xử lý nhanh
 jobs:
   waybill-checker:
@@ -32,7 +35,7 @@ jobs:
       - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
       
       - name: 📦 Install dependencies
         run: npm install
