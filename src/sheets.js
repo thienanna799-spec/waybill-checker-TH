@@ -69,7 +69,7 @@ async function readWaybillsFromSheet(filterDate = null, dvvcOnly = false) {
           startRowIndex: headerRowIndex,
           endRowIndex: headerRowIndex + 1,
           startColumnIndex: 0,
-          endColumnIndex: 30
+          endColumnIndex: Math.min(30, sheet.columnCount || 30)
         });
         for (let c = 0; c < 30; c++) {
           const cell = sheet.getCell(headerRowIndex, c);
@@ -182,7 +182,7 @@ async function writeResultsToSheet(results) {
     if (shipperColIndex !== null) {
       colIndices.push(shipperColIndex);
     }
-    const maxColIndex = Math.max(...colIndices, 9) + 2;
+    const maxColIndex = Math.min(Math.max(...colIndices) + 1, sheet.columnCount || 20);
     
     // Tải toàn bộ vùng dữ liệu để đọc header và cập nhật
     await sheet.loadCells({

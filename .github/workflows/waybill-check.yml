@@ -49,6 +49,9 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           
+          # Cấu hình cột
+          RESULT_COL: '7'
+          
           # Bỏ qua kiểm tra giờ hành chính để chạy 24/7 trên GitHub Actions
           BYPASS_HOURS: 'true'
           
