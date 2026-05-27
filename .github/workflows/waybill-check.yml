@@ -72,3 +72,7 @@ jobs:
         with:
           name: logs-batch-${{ matrix.batch }}
           path: logs/
+          
+      - name: 🖨️ Debug Logs
+        if: always()
+        run: cat logs/batch-${{ matrix.batch }}.log || echo "Không tìm thấy file log"
