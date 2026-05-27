@@ -58,6 +58,9 @@ jobs:
           BATCH_NUMBER: ${{ matrix.batch }}
           TOTAL_BATCHES: 5
           
+          # Bỏ qua kiểm tra giờ hành chính để chạy 24/7 trên GitHub Actions
+          BYPASS_HOURS: 'true'
+          
         run: node src/index.js
       
       - name: 💾 Save results
