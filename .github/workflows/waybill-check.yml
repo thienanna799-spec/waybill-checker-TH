@@ -46,12 +46,13 @@ jobs:
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
           GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
           GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
+          SHEET_NAME: ${{ secrets.SHEET_NAME }}
           
           # G-Solution
           GS_EMAIL: ${{ secrets.GS_EMAIL }}
           GS_PASSWORD: ${{ secrets.GS_PASSWORD }}
-          GS_BASE_URL: ${{ secrets.GS_BASE_URL }}
-          GS_COUNTRY_CODE: ${{ secrets.GS_COUNTRY_CODE }}
+          GS_BASE_URL: 'https://g-solution.vn'
+          GS_COUNTRY_CODE: '66'
           
           # Telegram
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
