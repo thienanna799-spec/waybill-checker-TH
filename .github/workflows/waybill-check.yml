@@ -11,22 +11,13 @@ on:
   # Tự động chạy khi có code mới
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
-# Chạy song song 5 batch để xử lý nhanh
 jobs:
   waybill-checker:
     runs-on: ubuntu-latest
-    
-    # Chạy song song 5 luồng
-    strategy:
-      fail-fast: false
-      matrix:
-        batch: [1, 2, 3, 4, 5]
     
     steps:
       - name: 📥 Checkout code
@@ -40,7 +31,7 @@ jobs:
       - name: 📦 Install dependencies
         run: npm install
         
-      - name: 🚀 Run waybill check - Batch ${{ matrix.batch }}
+      - name: 🚀 Run waybill check
         env:
           # Google Sheets
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
@@ -58,22 +49,12 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           
-          # Batch config
-          BATCH_NUMBER: ${{ matrix.batch }}
-          TOTAL_BATCHES: 5
-          
           # Bỏ qua kiểm tra giờ hành chính để chạy 24/7 trên GitHub Actions
           BYPASS_HOURS: 'true'
           
         run: node src/index.js
       
-      - name: 💾 Save results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: logs-batch-${{ matrix.batch }}
-          path: logs/
-          
       - name: 🖨️ Debug Logs
         if: always()
-        run: cat logs/batch-${{ matrix.batch }}.log || echo "Không tìm thấy file log"
+        run: cat logs/batch-1.log || echo "Không tìm thấy file log"
+
